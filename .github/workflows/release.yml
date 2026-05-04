@@ -32,6 +32,8 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          draft: false
+          prerelease: false
           name: MediaInboxToolkit ${{ github.ref_name }}
           body_path: ${{ runner.temp }}/release-body.md
           files: ${{ runner.temp }}/MediaInboxToolkit-*.zip
