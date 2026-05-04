@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
   "meta": {
-    "description": "ПРИМЕР одной библиотеки (не универсальный): скопируйте в sort-inbox.json и подправьте nasShareRoot / inboxRelative. Другой пользователь задаёт свои пути или оставляет только нужные ключи в destinations.",
+    "description": "Разложение inbox (Video\\Sort) во вложенный каталог Video\\Sort\\_Workspace\\… без выхода на основную библиотеку NAS. Скопируйте и подправьте nasShareRoot при необходимости.",
     "updatedAt": "2026-05-04"
   },
   "nasShareRoot": "\\\\Emilian_TNAS\\emildg8",
   "inboxRelative": "Video\\Sort",
   "destinations": {
-    "series": "Video\\Сериалы",
-    "cartoons": "Video\\Мультсериалы",
-    "cartoonMovies": "Video\\Мультики",
-    "movies": "Video\\Фильмы",
-    "anime": "Video\\Аниме",
-    "animeSeries": "Video\\Анимесериалы",
-    "review": "Video\\_SortReview"
+    "series": "Video\\Sort\\_Workspace\\series",
+    "cartoons": "Video\\Sort\\_Workspace\\cartoons",
+    "cartoonMovies": "Video\\Sort\\_Workspace\\cartoonMovies",
+    "movies": "Video\\Sort\\_Workspace\\movies",
+    "anime": "Video\\Sort\\_Workspace\\anime",
+    "animeSeries": "Video\\Sort\\_Workspace\\animeSeries",
+    "review": "Video\\Sort\\_Workspace\\_review"
   },
   "destinationsByKind": {
     "series_episode": "series",
@@ -30,12 +30,8 @@
     "bluray_remux": "movies"
   },
   "destinationsByKindMinConfidence": 40,
-  "tmdbKindRefinement": {
-    "enabled": true
-  },
-  "folders": {
-    "createDestinationRootsOnApply": true
-  },
+  "tmdbKindRefinement": { "enabled": true },
+  "folders": { "createDestinationRootsOnApply": true },
   "classification": {
     "folderSeasonContext": {
       "enabled": true,
@@ -49,7 +45,8 @@
     "featureMeter": { "minSecondsForFullFeature": 3600 }
   },
   "scope": {
-    "videoOnly": true
+    "videoOnly": true,
+    "excludeDirectoryNames": [ "_Workspace" ]
   },
   "safety": {
     "requireSourceUnderInbox": true,
@@ -64,14 +61,9 @@
     ]
   },
   "preferCartoonsSubfolder": false,
-  "displayNames": {
-    "tmdbLanguage": "ru-RU",
-    "preferCyrillic": true
-  },
+  "displayNames": { "tmdbLanguage": "ru-RU", "preferCyrillic": true },
   "episodeTitleFallback": "Серия {0}",
-  "blurayRemux": {
-    "enabled": true
-  },
+  "blurayRemux": { "enabled": true },
   "seasonFolderFormat": "Сезон {0}",
   "videoExtensions": [ "mkv", "mp4", "avi", "m4v", "mov", "wmv", "webm", "mpeg", "mpg" ],
   "filenameTemplates": {
