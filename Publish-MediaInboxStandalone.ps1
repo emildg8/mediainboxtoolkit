@@ -39,7 +39,10 @@ try {
     cmd.exe /c $cmd
     if ($LASTEXITCODE -ne 0) { throw "git subtree split завершился с кодом $LASTEXITCODE" }
     if (Test-Path -LiteralPath $WorktreePath) {
-        git worktree remove -f $WorktreePath 2>$null
+        $prevWt = $ErrorActionPreference
+        $ErrorActionPreference = 'SilentlyContinue'
+        try { git worktree remove -f $WorktreePath 2>&1 | Out-Null } catch { }
+        $ErrorActionPreference = $prevWt
         Remove-Item -LiteralPath $WorktreePath -Recurse -Force -ErrorAction SilentlyContinue
     }
     git worktree add -f $WorktreePath mit-standalone-publish
@@ -86,9 +89,12 @@ try {
     }
 
     Pop-Location
+    $prevWt2 = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
     try {
-        git worktree remove -f $WorktreePath 2>$null
+        git worktree remove -f $WorktreePath 2>&1 | Out-Null
     } catch { }
+    $ErrorActionPreference = $prevWt2
     if (Test-Path -LiteralPath $WorktreePath) {
         Remove-Item -LiteralPath $WorktreePath -Recurse -Force -ErrorAction SilentlyContinue
     }
