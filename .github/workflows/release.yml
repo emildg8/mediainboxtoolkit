@@ -1,0 +1,41 @@
+# Релиз по тегу vX.Y.Z: ZIP + оформленное описание из CHANGELOG.md
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build ZIP and release notes
+        shell: pwsh
+        env:
+          MIT_MONO_CHANGELOG_URL: 'https://github.com/emildg8/SeriesToolkit/blob/media-inbox-toolkit/MediaInboxToolkit/CHANGELOG.md'
+        run: |
+          $tag = $env:GITHUB_REF_NAME.Trim()
+          $ver = $tag.TrimStart('v')
+          $out = $env:RUNNER_TEMP
+          $script = Join-Path $env:GITHUB_WORKSPACE '.github/scripts/Build-MediaInboxRelease.ps1'
+          & $script -Version $ver -OutDir $out -MonorepoChangelogUrl $env:MIT_MONO_CHANGELOG_URL -RepoRoot $env:GITHUB_WORKSPACE
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: MediaInboxToolkit ${{ github.ref_name }}
+          body_path: ${{ runner.temp }}/release-body.md
+          files: ${{ runner.temp }}/MediaInboxToolkit-*.zip
+          generate_release_notes: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

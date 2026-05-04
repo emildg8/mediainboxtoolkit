@@ -2,7 +2,7 @@
 
 Отдельный инструмент для **входной сортировки** видео (inbox → `Сериалы` / `Фильмы` / `_SortReview`), с русскими именами через TMDB, Blu-ray remux и отчётами CSV/TXT.
 
-**SeriesToolkit** (стабильная линия **0.1.27**) остаётся продуктом нормализации уже разложенных библиотек сериалов. Этот пакет — расширяемый конвейер «до библиотеки»; дальнейшая полировка имён эпизодов — отдельным запуском SeriesToolkit по целевым папкам.
+**SeriesToolkit** (стабильная линия **0.2.2**) остаётся продуктом нормализации уже разложенных библиотек сериалов. Этот пакет — расширяемый конвейер «до библиотеки»; дальнейшая полировка имён эпизодов — отдельным запуском SeriesToolkit по целевым папкам.
 
 ## Требования
 
@@ -45,9 +45,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Publish-
 
 `-ForceWithLease` нужен, если на GitHub в `main` уже есть коммиты вне текущего subtree (типично после ручных правок).
 
+После успешного push скрипт **создаёт и отправляет тег** `v<version>` из `version.json`, если такого тега ещё нет на `media-inbox`. На GitHub срабатывает workflow **Release** (`.github/workflows/release.yml`): оформленное описание из `CHANGELOG.md` + ZIP с дистрибутивом и SHA-256.
+
 ## Связка с SeriesToolkit
 
-**MediaInboxToolkit** раскладывает файлы по структуре; **SeriesToolkit** (стабильная линия **0.1.27**) полирует имена эпизодов уже в целевых папках. Общий модуль метаданных — `Fetch-VideoMetadata.ps1`.
+**MediaInboxToolkit** раскладывает файлы по структуре; **SeriesToolkit** (стабильная линия **0.2.2**) полирует имена эпизодов уже в целевых папках. Общий модуль метаданных — `Fetch-VideoMetadata.ps1`.
 
 ## Политика (расширения)
 
@@ -57,10 +59,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Publish-
 - **`safety`** — `requireSourceUnderInbox`, `skipSourceIfUnderLibrary` + `libraryRootRelatives`, чтобы не трогать файлы уже в библиотеке.
 - **`tmdbKindRefinement`** — уточнение «аниме vs мульт» по TMDB (жанр Animation + регион).
 - **`folders.createDestinationRootsOnApply`** — перед переносом создать все каталоги из `destinations`, если отсутствуют.
-- **`classification`** — `folderSeasonContext` (папка `Season N` + файл `NN.`), `tvSpecialFilenameBoost` (Robot Chicken Star Wars Episode I→TV), `movies.allowMissingYearIfTmdbMatched`.
+- **`classification`** — `folderSeasonContext` (папка `Season N` / `N season` + файл `NN.`; опционально `orphanSeasonFolderSeriesMap` для одиночной папки сезона без родителя-шоу), `tvSpecialFilenameBoost` (Robot Chicken Star Wars Episode I→TV), `movies.allowMissingYearIfTmdbMatched`.
 
 ## Документация
 
+- [docs/FIX-PLAN-SORT-CLASSIFICATION-202605.md](docs/FIX-PLAN-SORT-CLASSIFICATION-202605.md) — план исправлений после in-place (movies/series, кириллица, RC/Archer, веб→TMDB id).
 - [docs/SORT-INBOX-PLAN.md](docs/SORT-INBOX-PLAN.md) — структура NAS, фазы, параметры политики.
 - [docs/CLASSIFICATION-ROADMAP.md](docs/CLASSIFICATION-ROADMAP.md) — типы контента 2.x и план сигналов.
 - [docs/OFFLINE-METADATA.md](docs/OFFLINE-METADATA.md) — постер и описание рядом с медиа.
@@ -74,4 +77,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Publish-
 
 ## Логи
 
-По умолчанию `.\LOGS\` (каталог в `.gitignore`).
+По умолчанию `.\LOGS\` (каталог в `.gitignore`). Для полного текстового транскрипта прогона (включая ошибки TMDB в консоли) и блока **POST-RUN SUMMARY** в конце файла: `.\Run-DryRunTranscript-Example.ps1` (параметры `-InboxPath` / `-PolicyPath` при необходимости).
+
+**Разложение только внутри Sort** (подкаталог `Sort\_Workspace\…`, затем SeriesToolkit по сериалам): `.\Organize-SortInPlace.ps1` и политика `sort-inbox.workspace-inside-sort.json` (`scope.excludeDirectoryNames`: `_Workspace`). Под `_Workspace` в политике используются **ASCII**-имена (`series`, `movies`, …), чтобы лаунчер не ломался на кодировке консоли; русские имена шоу/эпизодов задаёт TMDB.

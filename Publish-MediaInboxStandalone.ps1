@@ -58,8 +58,40 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw "git push не удался (возможен non-fast-forward). Повторите с -ForceWithLease или подтяните remote."
     }
+
+    $verJsonPath = Join-Path $WorktreePath 'version.json'
+    if (Test-Path -LiteralPath $verJsonPath) {
+        $verObj = Get-Content -LiteralPath $verJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $sem = [string]$verObj.version
+        if ($sem -match '^\d+\.\d+\.\d+$') {
+            $tagName = "v$sem"
+            $remoteTag = (git ls-remote --tags media-inbox "refs/tags/$tagName" 2>$null | Select-Object -First 1)
+            if (-not [string]::IsNullOrWhiteSpace($remoteTag)) {
+                Write-Host "Тег $tagName уже есть на media-inbox — push тега пропущен (релиз не дублируем)."
+            }
+            else {
+                git tag -a $tagName -m "MediaInboxToolkit $sem" HEAD 2>&1 | Out-Null
+                if ($LASTEXITCODE -ne 0) {
+                    git tag -f $tagName HEAD 2>&1 | Out-Null
+                }
+                git push media-inbox $tagName
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "OK: отправлен тег $tagName — при наличии .github/workflows/release.yml на GitHub создаётся Release."
+                }
+                else {
+                    Write-Warning "Не удалось отправить тег $tagName. Создайте вручную: git -C <worktree> push media-inbox $tagName"
+                }
+            }
+        }
+    }
+
     Pop-Location
-    git worktree remove -f $WorktreePath
+    try {
+        git worktree remove -f $WorktreePath 2>$null
+    } catch { }
+    if (Test-Path -LiteralPath $WorktreePath) {
+        Remove-Item -LiteralPath $WorktreePath -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 finally {
     Pop-Location

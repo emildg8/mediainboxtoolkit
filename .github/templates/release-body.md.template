@@ -1,0 +1,30 @@
+## MediaInboxToolkit {{SEM}}
+
+Входная сортировка видео (inbox, политика JSON, TMDB, Blu-ray remux). К этому репозиторию при публикации из монорепо добавляется общий модуль **`Fetch-VideoMetadata.ps1`** в корень архива.
+
+### Что нового
+
+{{BULLETS}}
+
+### Состав архива **`{{ZIPNAME}}`** (~{{SIZEKB}} KB)
+
+- **`MediaInboxToolkit.ps1`** — запуск dry-run / apply
+- **`MediaInboxToolkit.Engine.ps1`** — движок сортировки
+- **`sort-inbox.example.json`** — шаблон политики
+- **`README.md`** / **`CHANGELOG.md`** — документация и история версий
+- **`Fetch-VideoMetadata.ps1`** — метаданные TMDB/веб (в **корне** ZIP)
+
+### ffprobe
+
+Для длительности файлов используется **ffprobe**. После установки FFmpeg через WinGet shim обычно доступен как **`%LocalAppData%\Microsoft\WinGet\Links\ffprobe.exe`** — скрипт ищет его даже без обновления **`PATH`** в текущей сессии.
+
+### Ссылки
+
+- [CHANGELOG в этом репозитории](https://github.com/emildg8/MediaInboxToolkit/blob/main/CHANGELOG.md)
+- [История в монорепо SeriesToolkit]({{MONO_URL}}) (ветка `media-inbox-toolkit`)
+
+### Контрольная сумма SHA-256
+
+```
+{{SHA256}}  {{ZIPNAME}}
+```

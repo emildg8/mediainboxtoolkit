@@ -10,6 +10,14 @@
 
 
 
+
+## 0.2.1 - 2026-05-04 18:42:21 +03:00
+- `.github/workflows/release.yml` — при push тега `v*.*.*` сборка ZIP (без `.git` / `.github` / `OLD` / `LOGS`) и публикация Release через `softprops/action-gh-release`.
+- `.github/scripts/Build-MediaInboxRelease.ps1` + `.github/templates/release-body.md.template` — красивое описание на русском: секции «Что нового» из `CHANGELOG.md`, состав архива, ffprobe/WinGet, ссылки, SHA-256.
+- `Publish-MediaInboxStandalone.ps1` — после `main` создаёт аннотированный тег `v<version>`, если его ещё нет на `media-inbox`; устойчивое удаление worktree `_mit_publish_tmp`.
+- `README.md`: как связаны тег, workflow и ZIP.
+- Snapshot: OLD/MediaInboxToolkit_v0.2.0_20260504-184221 (launcher MediaInboxToolkit.ps1).
+
 ## 0.2.0 - 2026-05-04 18:19:15 +03:00
 - `Fetch-VideoMetadata.ps1`: `Find-TmdbTvEpisodeByTitleFuzzy`, `Test-SortEpisodeTitleFuzzyEquals` — поиск S/E по названию эпизода в сезонах TMDB (скан сверху вниз).
 - Политика `classification.shortFormEpisodeTitleGuess`: включение, `maxDurationSec`, `maxBasenameChars`, `maxSeasonsToScanPerShow`, привязка `pathContainsToTmdbTvId` (пример Robot Chicken / TMDB 1433).

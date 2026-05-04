@@ -9,6 +9,7 @@
   План доработок классификации: docs/FIX-PLAN-SORT-CLASSIFICATION-202605.md; постеры/NFO: ../SeriesMetaExtrasToolkit/.
   classification: webTmdbResolve (DDG/Яндекс→TMDB id), featureMeter (ffprobe порог полного метра, по умолчанию 3600 с).
   shortFormEpisodeTitleGuess: короткие файлы без SxxEyy — поиск эпизода по названию в TMDB (Fetch: Find-TmdbTvEpisodeByTitleFuzzy).
+  Релизы GitHub: workflow по тегу v*; Publish-MediaInboxStandalone.ps1 пушит тег после main.
 #>
 [CmdletBinding()]
 param(
