@@ -37,9 +37,23 @@
     "createDestinationRootsOnApply": true
   },
   "classification": {
-    "folderSeasonContext": { "enabled": true },
+    "folderSeasonContext": {
+      "enabled": true,
+      "orphanSeasonFolderSeriesMap": []
+    },
     "tvSpecialFilenameBoost": { "enabled": true },
-    "movies": { "allowMissingYearIfTmdbMatched": true }
+    "movies": { "allowMissingYearIfTmdbMatched": true },
+    "webTmdbResolve": { "enabled": true },
+    "featureMeter": { "minSecondsForFullFeature": 3600 },
+    "shortFormEpisodeTitleGuess": {
+      "enabled": true,
+      "maxDurationSec": 1500,
+      "maxBasenameChars": 72,
+      "maxSeasonsToScanPerShow": 28,
+      "pathContainsToTmdbTvId": [
+        { "ifPathContains": "Robot Chicken", "tmdbTvId": 1433 }
+      ]
+    }
   },
   "scope": {
     "videoOnly": true

@@ -4,6 +4,11 @@
   Точка входа MediaInboxToolkit — входная сортировка видео (NAS / локально), UTF-8, classification v2.
 .NOTES
   Двухшаговый сценарий: MediaInboxToolkit.Orchestrate.ps1. GUI: Start-MediaInboxToolkitGui.ps1.
+  Политика: classification.folderSeasonContext.orphanSeasonFolderSeriesMap для одиночной папки сезона.
+  scope.excludeDirectoryNames — не сканировать вложенные каталоги (например _Workspace при разложении внутри Sort).
+  План доработок классификации: docs/FIX-PLAN-SORT-CLASSIFICATION-202605.md; постеры/NFO: ../SeriesMetaExtrasToolkit/.
+  classification: webTmdbResolve (DDG/Яндекс→TMDB id), featureMeter (ffprobe порог полного метра, по умолчанию 3600 с).
+  shortFormEpisodeTitleGuess: короткие файлы без SxxEyy — поиск эпизода по названию в TMDB (Fetch: Find-TmdbTvEpisodeByTitleFuzzy).
 #>
 [CmdletBinding()]
 param(

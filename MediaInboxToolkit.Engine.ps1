@@ -184,6 +184,29 @@ function Test-PathUnderAnyRoot {
     return $false
 }
 
+function Test-MediaInboxPathContainsExcludedScopeSegment {
+    param(
+        [string]$FullPath,
+        [string]$InboxRoot,
+        [string[]]$ExcludeDirNames
+    )
+    if ($null -eq $ExcludeDirNames -or $ExcludeDirNames.Count -eq 0) { return $false }
+    $set = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($x in $ExcludeDirNames) {
+        if ([string]::IsNullOrWhiteSpace($x)) { continue }
+        [void]$set.Add($x.Trim())
+    }
+    if ($set.Count -eq 0) { return $false }
+    $prefix = $InboxRoot.TrimEnd('\') + '\'
+    if (-not $FullPath.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+    $rel = $FullPath.Substring($prefix.Length)
+    foreach ($seg in ($rel -split '\\')) {
+        if ([string]::IsNullOrWhiteSpace($seg)) { continue }
+        if ($set.Contains($seg)) { return $true }
+    }
+    return $false
+}
+
 function Get-VideoClassification {
     param([string]$FileName)
     $base = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
@@ -241,7 +264,8 @@ function Merge-VideoClassificationWithFolderContext {
     param(
         $Cls,
         [System.IO.FileInfo]$File,
-        [string]$InboxPrefixWithSlash
+        [string]$InboxPrefixWithSlash,
+        $OrphanSeasonEntries
     )
     if ($null -eq $Cls -or $Cls.Kind -eq 'series') { return $Cls }
     if (-not $File -or [string]::IsNullOrWhiteSpace($InboxPrefixWithSlash)) { return $Cls }
@@ -250,7 +274,7 @@ function Merge-VideoClassificationWithFolderContext {
     $relDir = $dir.Substring($InboxPrefixWithSlash.Length).TrimEnd('\')
     if ([string]::IsNullOrWhiteSpace($relDir)) { return $Cls }
     $parts = @($relDir -split '\\' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-    if ($parts.Count -lt 2) { return $Cls }
+    if ($parts.Count -lt 1) { return $Cls }
     $last = $parts[$parts.Count - 1]
     $seasonNum = $null
     foreach ($pat in @(
@@ -266,10 +290,30 @@ function Merge-VideoClassificationWithFolderContext {
         }
     }
     if ($null -eq $seasonNum) { return $Cls }
-    $showPart = $parts[$parts.Count - 2]
+    $showPart = $null
+    if ($parts.Count -ge 2) {
+        $showPart = $parts[$parts.Count - 2]
+    }
+    elseif ($parts.Count -eq 1) {
+        if ($null -ne $OrphanSeasonEntries) {
+            foreach ($entry in $OrphanSeasonEntries) {
+                if ($null -eq $entry) { continue }
+                $fm = [string]$entry.folderMatch
+                if ([string]::IsNullOrWhiteSpace($fm)) { continue }
+                if ($last.Equals($fm.Trim(), [StringComparison]::OrdinalIgnoreCase)) {
+                    $showPart = [string]$entry.seriesGuess
+                    break
+                }
+            }
+        }
+        if ([string]::IsNullOrWhiteSpace($showPart)) { return $Cls }
+    }
     if ([string]::IsNullOrWhiteSpace($showPart)) { return $Cls }
     $base = [System.IO.Path]::GetFileNameWithoutExtension($File.Name)
     $me = [regex]::Match($base, '^(\d{1,3})\.\s*')
+    if (-not $me.Success) {
+        $me = [regex]::Match($base, '^(\d{1,3})\.')
+    }
     if (-not $me.Success) {
         $me = [regex]::Match($base, '^(\d{1,3})[\s\-_]+')
     }
@@ -279,16 +323,17 @@ function Merge-VideoClassificationWithFolderContext {
     if ([string]::IsNullOrWhiteSpace($titleAfter)) { $titleAfter = $null }
     $sg = Remove-SortReleaseTechnicalTokens $showPart
     if ([string]::IsNullOrWhiteSpace($sg)) { return $Cls }
+    $sortSrc = if ($parts.Count -ge 2) { 'folder_season_episode' } else { 'folder_season_episode_orphan_map' }
     $o = [pscustomobject]@{
         Kind         = 'series'
         Season       = $seasonNum
         Episode      = $ep
         SeriesGuess  = $sg
         EpisodeTitle = $titleAfter
-        Confidence   = 62
+        Confidence   = if ($parts.Count -ge 2) { 62 } else { 59 }
         QueryMovie   = $null
     }
-    Add-Member -InputObject $o -MemberType NoteProperty -Name SortSource -Value 'folder_season_episode' -Force
+    Add-Member -InputObject $o -MemberType NoteProperty -Name SortSource -Value $sortSrc -Force
     return $o
 }
 
@@ -463,12 +508,31 @@ if (($policy.PSObject.Properties.Name -contains 'folders') -and $null -ne $polic
 $folderSeasonContextEnabled = $true
 $tvSpecialFilenameBoostEnabled = $true
 $allowMovieNoYearIfTmdbMatched = $true
+$webTmdbResolveEnabled = $true
+$featureMeterMinSeconds = 3600
+$mitEpTitleFuzzEnabled = $true
+$mitEpTitleFuzzMaxDurationSec = 1500
+$mitEpTitleFuzzMaxBasenameChars = 72
+$mitEpTitleFuzzMaxSeasonScan = 28
+$mitEpTitleFuzzPathHints = [System.Collections.Generic.List[object]]::new()
+$orphanSeasonFolderSeriesList = [System.Collections.Generic.List[object]]::new()
 if ($policy.PSObject.Properties.Name -contains 'classification' -and $null -ne $policy.classification) {
     $cf = $policy.classification
     if ($cf.PSObject.Properties.Name -contains 'folderSeasonContext' -and $null -ne $cf.folderSeasonContext) {
         $fsc = $cf.folderSeasonContext
         if ($fsc.PSObject.Properties.Name -contains 'enabled') {
             $folderSeasonContextEnabled = [bool]$fsc.enabled
+        }
+        if ($fsc.PSObject.Properties.Name -contains 'orphanSeasonFolderSeriesMap' -and $null -ne $fsc.orphanSeasonFolderSeriesMap) {
+            foreach ($row in @($fsc.orphanSeasonFolderSeriesMap)) {
+                if ($null -eq $row) { continue }
+                $pnr = $row.PSObject.Properties.Name
+                $fm = if ($pnr -contains 'folderMatch') { [string]$row.folderMatch } else { '' }
+                $sgg = if ($pnr -contains 'seriesGuess') { [string]$row.seriesGuess } else { '' }
+                if (-not [string]::IsNullOrWhiteSpace($fm) -and -not [string]::IsNullOrWhiteSpace($sgg)) {
+                    [void]$orphanSeasonFolderSeriesList.Add([pscustomobject]@{ folderMatch = $fm.Trim(); seriesGuess = $sgg.Trim() })
+                }
+            }
         }
     }
     if ($cf.PSObject.Properties.Name -contains 'tvSpecialFilenameBoost' -and $null -ne $cf.tvSpecialFilenameBoost) {
@@ -483,6 +547,48 @@ if ($policy.PSObject.Properties.Name -contains 'classification' -and $null -ne $
             $allowMovieNoYearIfTmdbMatched = [bool]$mv.allowMissingYearIfTmdbMatched
         }
     }
+    if ($cf.PSObject.Properties.Name -contains 'webTmdbResolve' -and $null -ne $cf.webTmdbResolve) {
+        $wtr = $cf.webTmdbResolve
+        if ($wtr.PSObject.Properties.Name -contains 'enabled') {
+            $webTmdbResolveEnabled = [bool]$wtr.enabled
+        }
+    }
+    if ($cf.PSObject.Properties.Name -contains 'featureMeter' -and $null -ne $cf.featureMeter) {
+        $fm = $cf.featureMeter
+        if ($fm.PSObject.Properties.Name -contains 'minSecondsForFullFeature') {
+            try { $featureMeterMinSeconds = [int]$fm.minSecondsForFullFeature } catch { }
+        }
+    }
+    if ($cf.PSObject.Properties.Name -contains 'shortFormEpisodeTitleGuess' -and $null -ne $cf.shortFormEpisodeTitleGuess) {
+        $eGuess = $cf.shortFormEpisodeTitleGuess
+        if ($eGuess.PSObject.Properties.Name -contains 'enabled') {
+            try { $mitEpTitleFuzzEnabled = [bool]$eGuess.enabled } catch { }
+        }
+        if ($eGuess.PSObject.Properties.Name -contains 'maxDurationSec') {
+            try {
+                $vDur = [int]$eGuess.maxDurationSec
+                if ($vDur -ge 180 -and $vDur -le 7200) { $mitEpTitleFuzzMaxDurationSec = $vDur }
+            } catch { }
+        }
+        if ($eGuess.PSObject.Properties.Name -contains 'maxBasenameChars') {
+            try {
+                $vBc = [int]$eGuess.maxBasenameChars
+                if ($vBc -ge 16 -and $vBc -le 200) { $mitEpTitleFuzzMaxBasenameChars = $vBc }
+            } catch { }
+        }
+        if ($eGuess.PSObject.Properties.Name -contains 'maxSeasonsToScanPerShow') {
+            try {
+                $vSs = [int]$eGuess.maxSeasonsToScanPerShow
+                if ($vSs -ge 4 -and $vSs -le 60) { $mitEpTitleFuzzMaxSeasonScan = $vSs }
+            } catch { }
+        }
+        if ($eGuess.PSObject.Properties.Name -contains 'pathContainsToTmdbTvId' -and $null -ne $eGuess.pathContainsToTmdbTvId) {
+            foreach ($row in @($eGuess.pathContainsToTmdbTvId)) {
+                if ($null -eq $row) { continue }
+                [void]$mitEpTitleFuzzPathHints.Add($row)
+            }
+        }
+    }
 }
 
 $epFallbackFmt = 'Серия {0}'
@@ -493,6 +599,16 @@ if (($policy.PSObject.Properties.Name -contains 'episodeTitleFallback') -and -no
 $extList = @()
 foreach ($e in @($policy.videoExtensions)) { $extList += [string]$e.ToLowerInvariant() }
 if ($extList.Count -eq 0) { $extList = @('mkv', 'mp4', 'avi') }
+
+$scopeExcludeDirs = [System.Collections.Generic.List[string]]::new()
+if ($policy.PSObject.Properties.Name -contains 'scope' -and $null -ne $policy.scope) {
+    $scx = $policy.scope
+    if ($scx.PSObject.Properties.Name -contains 'excludeDirectoryNames' -and $null -ne $scx.excludeDirectoryNames) {
+        foreach ($en in @($scx.excludeDirectoryNames)) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$en)) { [void]$scopeExcludeDirs.Add([string]$en.Trim()) }
+        }
+    }
+}
 
 if ([string]::IsNullOrWhiteSpace($LogDirectory)) { $LogDirectory = Join-Path $PSScriptRoot 'LOGS' }
 if (-not (Test-Path -LiteralPath $LogDirectory)) { New-Item -ItemType Directory -Path $LogDirectory -Force | Out-Null }
@@ -512,10 +628,22 @@ $blurayRoots = @()
 if ($blurayEnabled) {
     $blurayRoots = @(Find-BlurayReleaseRootsUnderInbox -InboxRoot $InboxPath)
 }
+if ($scopeExcludeDirs.Count -gt 0) {
+    $exArr = @($scopeExcludeDirs)
+    $blurayRoots = @($blurayRoots | Where-Object {
+            -not (Test-MediaInboxPathContainsExcludedScopeSegment -FullPath $_ -InboxRoot $inboxNormForRel -ExcludeDirNames $exArr)
+        })
+}
 
 $allFiles = @(Get-ChildItem -LiteralPath $InboxPath -File -Recurse -ErrorAction Stop | Where-Object {
         $extList -contains $_.Extension.TrimStart('.').ToLowerInvariant()
     })
+if ($scopeExcludeDirs.Count -gt 0) {
+    $exArr = @($scopeExcludeDirs)
+    $allFiles = @($allFiles | Where-Object {
+            -not (Test-MediaInboxPathContainsExcludedScopeSegment -FullPath $_.FullName -InboxRoot $inboxNormForRel -ExcludeDirNames $exArr)
+        })
+}
 
 $files = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
 foreach ($f in $allFiles) {
@@ -692,20 +820,264 @@ function Invoke-SortTmdbMovieSearchWithFallbacks {
     return $null
 }
 
+function Try-MediaInboxParseSeasonEpisodeFromBasename([string]$BaseName) {
+    if ([string]::IsNullOrWhiteSpace($BaseName)) { return $null }
+    $m = [regex]::Match($BaseName, '(?i)\bS(\d{1,2})\s*E(\d{1,3})\b')
+    if ($m.Success) {
+        return @{ Season = [int]$m.Groups[1].Value; Episode = [int]$m.Groups[2].Value }
+    }
+    $m2 = [regex]::Match($BaseName, '(?i)(?<![\d])(\d{1,2})x(\d{2,3})(?![\d])')
+    if ($m2.Success) {
+        $ep = [int]$m2.Groups[2].Value
+        if ($ep -notin 480, 540, 720, 1080, 1440, 2160, 4320) {
+            return @{ Season = [int]$m2.Groups[1].Value; Episode = $ep }
+        }
+    }
+    return $null
+}
+
+function Get-MediaInboxEpisodeTitleTailFromBasename([string]$BaseName) {
+    if ([string]::IsNullOrWhiteSpace($BaseName)) { return $null }
+    $t = $BaseName -replace '(?i)^.*?\bS\d{1,2}\s*E\d{1,3}\b\s*[-–._\s]*', ''
+    $t = $t.Trim(' -–._')
+    if ($t.Length -lt 2) { return $null }
+    return $t
+}
+
+function Invoke-MediaInboxRuntimeWebSeriesReclassify {
+    param(
+        $Cls,
+        [System.IO.FileInfo]$File,
+        [string]$ApiKey,
+        [string]$Lang,
+        [bool]$UseTmdb,
+        [int]$FeatureMinSec,
+        [bool]$WebEnabled
+    )
+    if ($null -eq $Cls -or $Cls.Kind -ne 'movie') { return $Cls }
+    $dur = $null
+    if (Get-Command Get-VideoFileDurationSecondsFfprobe -ErrorAction SilentlyContinue) {
+        try { $dur = Get-VideoFileDurationSecondsFfprobe -LiteralPath $File.FullName } catch { $dur = $null }
+    }
+    Add-Member -InputObject $Cls -MemberType NoteProperty -Name MitDurationSec -Value $dur -Force
+    if ($null -ne $dur -and $dur -ge $FeatureMinSec) {
+        Add-Member -InputObject $Cls -MemberType NoteProperty -Name MitFeatureMeterHint -Value 'runtime_ge_threshold' -Force
+        return $Cls
+    }
+    if (-not $UseTmdb -or [string]::IsNullOrWhiteSpace($ApiKey)) { return $Cls }
+    if ($null -eq $dur -or $dur -ge $FeatureMinSec) { return $Cls }
+    $base = [System.IO.Path]::GetFileNameWithoutExtension($File.Name)
+    $se = Try-MediaInboxParseSeasonEpisodeFromBasename $base
+    if ($null -eq $se) { return $Cls }
+    $clean = Remove-SortReleaseTechnicalTokens $base
+    if ([string]::IsNullOrWhiteSpace($clean)) { return $Cls }
+    $tvId = $null
+    $tvName = ''
+    if ($WebEnabled -and (Get-Command Get-SortTmdbRefsFromWebSearchAuto -ErrorAction SilentlyContinue)) {
+        foreach ($w in @(Get-SortTmdbRefsFromWebSearchAuto $clean)) {
+            if ([string]$w.RefKind -ne 'tv') { continue }
+            $det = Get-MitCachedTmdbTvDetails -TvId ([int]$w.Id) -ApiKey $ApiKey -Lang $Lang
+            $nm = ''
+            if ($det) {
+                $pn = $det.PSObject.Properties.Name
+                if ($pn -contains 'name') { $nm = [string]$det.name }
+                if ([string]::IsNullOrWhiteSpace($nm) -and ($pn -contains 'original_name')) { $nm = [string]$det.original_name }
+            }
+            if (-not [string]::IsNullOrWhiteSpace($nm) -and (Get-Command Test-SortTitleTokenOverlap -ErrorAction SilentlyContinue) -and (Test-SortTitleTokenOverlap $clean $nm)) {
+                $tvId = [int]$w.Id
+                $tvName = $nm
+                break
+            }
+        }
+    }
+    if (-not $tvId -and (Get-Command Search-TmdbTvSeries -ErrorAction SilentlyContinue)) {
+        $hits = @(Search-TmdbTvSeries -Query $clean -ApiKey $ApiKey -Language $Lang)
+        foreach ($h in ($hits | Select-Object -First 6)) {
+            $nm = [string]$h.name
+            if ([string]::IsNullOrWhiteSpace($nm)) { $nm = [string]$h.original_name }
+            if ([string]::IsNullOrWhiteSpace($nm)) { continue }
+            if ((Get-Command Test-SortTitleTokenOverlap -ErrorAction SilentlyContinue) -and (Test-SortTitleTokenOverlap $clean $nm)) {
+                $tvId = [int]$h.id
+                $tvName = $nm
+                break
+            }
+        }
+    }
+    if (-not $tvId) { return $Cls }
+    $sg = Remove-SortReleaseTechnicalTokens $tvName
+    if ([string]::IsNullOrWhiteSpace($sg)) { $sg = $clean }
+    $epTitle = Get-MediaInboxEpisodeTitleTailFromBasename $base
+    $o = [pscustomobject]@{
+        Kind         = 'series'
+        Season       = [int]$se.Season
+        Episode      = [int]$se.Episode
+        SeriesGuess  = $sg
+        EpisodeTitle = $epTitle
+        Confidence   = 52
+        QueryMovie   = $null
+    }
+    Add-Member -InputObject $o -MemberType NoteProperty -Name SortSource -Value 'mit_runtime_web_tv_reclassify' -Force
+    if ($null -ne $dur) {
+        Add-Member -InputObject $o -MemberType NoteProperty -Name MitDurationSec -Value $dur -Force
+    }
+    return $o
+}
+
+function Invoke-MediaInboxEpisodeTitleFuzzyReclassify {
+    param(
+        $Cls,
+        [System.IO.FileInfo]$File,
+        [string]$ApiKey,
+        [string]$Lang,
+        [bool]$UseTmdb,
+        [int]$FeatureMinSec,
+        [bool]$WebEnabled,
+        [string]$RelFromInbox,
+        [bool]$FuzzEnabled,
+        [int]$FuzzMaxDurationSec,
+        [int]$FuzzMaxBasenameChars,
+        [object[]]$PathHints,
+        [int]$MaxSeasonsScan
+    )
+    if (-not $FuzzEnabled) { return $Cls }
+    if ($null -eq $Cls -or $Cls.Kind -ne 'movie') { return $Cls }
+    if (-not $UseTmdb -or [string]::IsNullOrWhiteSpace($ApiKey)) { return $Cls }
+    if (-not (Get-Command Find-TmdbTvEpisodeByTitleFuzzy -ErrorAction SilentlyContinue)) { return $Cls }
+
+    $base = [System.IO.Path]::GetFileNameWithoutExtension($File.Name)
+    if ($null -ne (Try-MediaInboxParseSeasonEpisodeFromBasename $base)) { return $Cls }
+
+    $clean = Remove-SortReleaseTechnicalTokens $base
+    if ([string]::IsNullOrWhiteSpace($clean)) { return $Cls }
+    if ($clean.Length -gt $FuzzMaxBasenameChars) { return $Cls }
+
+    $dur = $null
+    if ($Cls.PSObject.Properties.Name -contains 'MitDurationSec') {
+        try { $dur = [Nullable[int]]$Cls.MitDurationSec } catch { $dur = $null }
+    }
+    if ($null -eq $dur -and (Get-Command Get-VideoFileDurationSecondsFfprobe -ErrorAction SilentlyContinue)) {
+        try { $dur = Get-VideoFileDurationSecondsFfprobe -LiteralPath $File.FullName } catch { $dur = $null }
+    }
+    if ($null -eq $dur) { return $Cls }
+    if ($dur -ge $FeatureMinSec) { return $Cls }
+    if ($dur -gt $FuzzMaxDurationSec) { return $Cls }
+
+    $needlePath = if ([string]::IsNullOrWhiteSpace($RelFromInbox)) { $File.Name } else { "$RelFromInbox\$($File.Name)" }
+    $tvCandidates = [System.Collections.Generic.List[int]]::new()
+    foreach ($ph in @($PathHints)) {
+        if ($null -eq $ph) { continue }
+        $pnh = $ph.PSObject.Properties.Name
+        $tid = 0
+        if ($pnh -contains 'tmdbTvId') {
+            try { $tid = [int]$ph.tmdbTvId } catch { $tid = 0 }
+        }
+        if ($tid -le 0) { continue }
+        $subs = [System.Collections.Generic.List[string]]::new()
+        if ($pnh -contains 'ifPathContains' -and -not [string]::IsNullOrWhiteSpace([string]$ph.ifPathContains)) {
+            [void]$subs.Add([string]$ph.ifPathContains)
+        }
+        if ($pnh -contains 'ifPathContainsAny' -and $null -ne $ph.ifPathContainsAny) {
+            foreach ($s in @($ph.ifPathContainsAny)) {
+                if (-not [string]::IsNullOrWhiteSpace([string]$s)) { [void]$subs.Add([string]$s.Trim()) }
+            }
+        }
+        foreach ($sub in $subs) {
+            if ($needlePath.IndexOf($sub, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                if ($tid -gt 0) {
+                    $dupP = $false
+                    foreach ($ex in $tvCandidates) { if ($ex -eq $tid) { $dupP = $true; break } }
+                    if (-not $dupP) { [void]$tvCandidates.Add($tid) }
+                }
+                break
+            }
+        }
+    }
+
+    $singleWord = ($clean -notmatch '\s')
+    if ($WebEnabled -and (Get-Command Get-SortTmdbRefsFromWebSearchAuto -ErrorAction SilentlyContinue)) {
+        foreach ($q in @("$clean tmdb tv", $clean)) {
+            foreach ($w in @(Get-SortTmdbRefsFromWebSearchAuto $q)) {
+                if ([string]$w.RefKind -ne 'tv') { continue }
+                $idW = 0
+                try { $idW = [int]$w.Id } catch { $idW = 0 }
+                if ($idW -gt 0) {
+                    $dupW = $false
+                    foreach ($ex in $tvCandidates) { if ($ex -eq $idW) { $dupW = $true; break } }
+                    if (-not $dupW) { [void]$tvCandidates.Add($idW) }
+                }
+                if ($tvCandidates.Count -ge 10) { break }
+            }
+            if ($singleWord -and $tvCandidates.Count -gt 0) { break }
+        }
+    }
+    if (-not $singleWord -and (Get-Command Search-TmdbTvSeries -ErrorAction SilentlyContinue)) {
+        foreach ($h in @(Search-TmdbTvSeries -Query $clean -ApiKey $ApiKey -Language $Lang | Select-Object -First 5)) {
+            $nm = [string]$h.name
+            if ([string]::IsNullOrWhiteSpace($nm)) { $nm = [string]$h.original_name }
+            if ([string]::IsNullOrWhiteSpace($nm)) { continue }
+            if ((Get-Command Test-SortTitleTokenOverlap -ErrorAction SilentlyContinue) -and -not (Test-SortTitleTokenOverlap $clean $nm)) { continue }
+            $hid = 0
+            try { $hid = [int]$h.id } catch { $hid = 0 }
+            if ($hid -gt 0) {
+                $dupH = $false
+                foreach ($ex in $tvCandidates) { if ($ex -eq $hid) { $dupH = $true; break } }
+                if (-not $dupH) { [void]$tvCandidates.Add($hid) }
+            }
+        }
+    }
+
+    if ($tvCandidates.Count -eq 0) { return $Cls }
+
+    foreach ($tid in $tvCandidates) {
+        $found = Find-TmdbTvEpisodeByTitleFuzzy -TvId $tid -EpisodeTitleGuess $clean -ApiKey $ApiKey -Language $Lang -MaxSeasonsToScan $MaxSeasonsScan
+        if ($null -eq $found) { continue }
+        $sg = ''
+        if (Get-Command Get-TmdbTvResolvedRuDisplayName -ErrorAction SilentlyContinue) {
+            $sg = Get-TmdbTvResolvedRuDisplayName -TvId $tid -ApiKey $ApiKey
+        }
+        if ([string]::IsNullOrWhiteSpace($sg)) {
+            $dd = Get-MitCachedTmdbTvDetails -TvId $tid -ApiKey $ApiKey -Lang $Lang
+            if ($dd -and $dd.PSObject.Properties.Name -contains 'name') {
+                $sg = Remove-SortReleaseTechnicalTokens ([string]$dd.name)
+            }
+        }
+        if ([string]::IsNullOrWhiteSpace($sg)) { $sg = $clean }
+        $o = [pscustomobject]@{
+            Kind         = 'series'
+            Season       = [int]$found.Season
+            Episode      = [int]$found.Episode
+            SeriesGuess  = $sg
+            EpisodeTitle = [string]$found.MatchedTitle
+            Confidence   = 46
+            QueryMovie   = $null
+        }
+        Add-Member -InputObject $o -MemberType NoteProperty -Name SortSource -Value 'mit_episode_title_fuzzy' -Force
+        if ($null -ne $dur) {
+            Add-Member -InputObject $o -MemberType NoteProperty -Name MitDurationSec -Value $dur -Force
+        }
+        return $o
+    }
+    return $Cls
+}
+
 $rows = [System.Collections.Generic.List[object]]::new()
 
 foreach ($f in $files) {
     $prefixInbox = $inboxNormForRel + '\'
+    $relFromInbox = ''
+    if ($f.FullName.StartsWith($prefixInbox, [StringComparison]::OrdinalIgnoreCase)) {
+        $relFromInbox = $f.FullName.Substring($prefixInbox.Length)
+    }
     $cls = Get-VideoClassification -FileName $f.Name
     if ($folderSeasonContextEnabled) {
-        $cls = Merge-VideoClassificationWithFolderContext -Cls $cls -File $f -InboxPrefixWithSlash $prefixInbox
+        $cls = Merge-VideoClassificationWithFolderContext -Cls $cls -File $f -InboxPrefixWithSlash $prefixInbox -OrphanSeasonEntries $orphanSeasonFolderSeriesList
     }
     if ($tvSpecialFilenameBoostEnabled -and $UseTmdb -and -not [string]::IsNullOrWhiteSpace($key) -and $cls.Kind -eq 'movie') {
         $cls = Resolve-SortTvSpecialFromMovieFilename -Cls $cls -FileName $f.Name -ApiKey $key -Lang $tmdbLang -Enabled $true
     }
-    $relFromInbox = ''
-    if ($f.FullName.StartsWith($prefixInbox, [StringComparison]::OrdinalIgnoreCase)) {
-        $relFromInbox = $f.FullName.Substring($prefixInbox.Length)
+    if ($cls.Kind -eq 'movie') {
+        $cls = Invoke-MediaInboxRuntimeWebSeriesReclassify -Cls $cls -File $f -ApiKey $key -Lang $tmdbLang -UseTmdb $UseTmdb -FeatureMinSec $featureMeterMinSeconds -WebEnabled $webTmdbResolveEnabled
+        $cls = Invoke-MediaInboxEpisodeTitleFuzzyReclassify -Cls $cls -File $f -ApiKey $key -Lang $tmdbLang -UseTmdb $UseTmdb -FeatureMinSec $featureMeterMinSeconds -WebEnabled $webTmdbResolveEnabled -RelFromInbox $relFromInbox -FuzzEnabled $mitEpTitleFuzzEnabled -FuzzMaxDurationSec $mitEpTitleFuzzMaxDurationSec -FuzzMaxBasenameChars $mitEpTitleFuzzMaxBasenameChars -PathHints @($mitEpTitleFuzzPathHints.ToArray()) -MaxSeasonsScan $mitEpTitleFuzzMaxSeasonScan
     }
     $ckKind = ''
     $ckConf = ''
@@ -723,7 +1095,11 @@ foreach ($f in $files) {
     if ($cls.Kind -eq 'series' -and ($ckKind -in @('', 'movie', 'unknown') -or $ckKind -eq 'movie')) {
         $ckKind = 'series_episode'
         $boost = 55
-        if ($cls.PSObject.Properties.Name -contains 'SortSource' -and [string]$cls.SortSource -eq 'folder_season_episode') { $boost = 58 }
+        if ($cls.PSObject.Properties.Name -contains 'SortSource') {
+            $ss = [string]$cls.SortSource
+            if ($ss -eq 'folder_season_episode') { $boost = 58 }
+            elseif ($ss -eq 'folder_season_episode_orphan_map') { $boost = 57 }
+        }
         $ckConfInt = [Math]::Max($ckConfInt, $boost)
         $ckConf = [string]$ckConfInt
         $ckWhy = if ([string]::IsNullOrWhiteSpace($ckWhy)) { 'align_ck_to_series_classification' } else { "$ckWhy|align_ck_to_series_classification" }
@@ -894,6 +1270,15 @@ foreach ($f in $files) {
             if ($cls.Confidence -lt 35) { $cls.Confidence = 35 }
             if ($notes -notmatch 'movie_needs_year') { $notes = if ($notes) { "$notes;tmdb_skipped" } else { 'tmdb_skipped' } }
         }
+    }
+
+    if ($cls.PSObject.Properties.Name -contains 'MitDurationSec' -and $null -ne $cls.MitDurationSec) {
+        if ($notes) { $notes += ';' }
+        $notes += ('mit_dur_s={0}' -f [int]$cls.MitDurationSec)
+    }
+    if ($cls.PSObject.Properties.Name -contains 'MitFeatureMeterHint' -and -not [string]::IsNullOrWhiteSpace([string]$cls.MitFeatureMeterHint)) {
+        if ($notes) { $notes += ';' }
+        $notes += ('mit_feature_hint={0}' -f [string]$cls.MitFeatureMeterHint)
     }
 
     if ($null -eq $destFull) {
