@@ -102,7 +102,7 @@ $body = $rawTpl.
     Replace('{{MONO_URL}}', $MonorepoChangelogUrl).
     Replace('{{BULLETS}}', $bulletMd)
 
-[System.IO.File]::WriteAllText($bodyPath, $body.TrimEnd() + $nl, [System.Text.UTF8Encoding]::new($true))
+[System.IO.File]::WriteAllText($bodyPath, $body.TrimStart([char]0xFEFF).TrimEnd() + $nl, [System.Text.UTF8Encoding]::new($false))
 
 Write-Host "ZIP=$zipPath"
 Write-Host "BODY=$bodyPath"

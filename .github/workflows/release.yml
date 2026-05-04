@@ -19,6 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build ZIP and release notes
+        id: pack
         shell: pwsh
         env:
           MIT_MONO_CHANGELOG_URL: 'https://github.com/emildg8/SeriesToolkit/blob/media-inbox-toolkit/MediaInboxToolkit/CHANGELOG.md'
@@ -28,6 +29,10 @@ jobs:
           $out = $env:RUNNER_TEMP
           $script = Join-Path $env:GITHUB_WORKSPACE '.github/scripts/Build-MediaInboxRelease.ps1'
           & $script -Version $ver -OutDir $out -MonorepoChangelogUrl $env:MIT_MONO_CHANGELOG_URL -RepoRoot $env:GITHUB_WORKSPACE
+          $zipItem = Get-ChildItem -LiteralPath $out -Filter ('MediaInboxToolkit-{0}.zip' -f $ver) -File | Select-Object -First 1
+          if (-not $zipItem) { throw "ZIP not found under $out" }
+          $line = "zip_path=$($zipItem.FullName)$([char]10)"
+          [System.IO.File]::AppendAllText($env:GITHUB_OUTPUT, $line, [System.Text.UTF8Encoding]::new($false))
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -36,7 +41,7 @@ jobs:
           prerelease: false
           name: MediaInboxToolkit ${{ github.ref_name }}
           body_path: ${{ runner.temp }}/release-body.md
-          files: ${{ runner.temp }}/MediaInboxToolkit-*.zip
+          files: ${{ steps.pack.outputs.zip_path }}
           generate_release_notes: false
           make_latest: true
         env:
