@@ -67,7 +67,7 @@ try {
             $tagName = "v$sem"
             $remoteTag = (git ls-remote --tags media-inbox "refs/tags/$tagName" 2>$null | Select-Object -First 1)
             if (-not [string]::IsNullOrWhiteSpace($remoteTag)) {
-                Write-Host "Тег $tagName уже есть на media-inbox — push тега пропущен (релиз не дублируем)."
+                Write-Host "Tag $tagName already on media-inbox; skip tag push."
             }
             else {
                 git tag -a $tagName -m "MediaInboxToolkit $sem" HEAD 2>&1 | Out-Null
@@ -76,10 +76,10 @@ try {
                 }
                 git push media-inbox $tagName
                 if ($LASTEXITCODE -eq 0) {
-                    Write-Host "OK: отправлен тег $tagName — при наличии .github/workflows/release.yml на GitHub создаётся Release."
+                    Write-Host "OK: pushed tag $tagName (GitHub Actions release if workflow present)."
                 }
                 else {
-                    Write-Warning "Не удалось отправить тег $tagName. Создайте вручную: git -C <worktree> push media-inbox $tagName"
+                    Write-Warning "Tag push failed: $tagName. Push manually from worktree: git push media-inbox $tagName"
                 }
             }
         }
@@ -95,6 +95,5 @@ try {
 }
 finally {
     Pop-Location
+    Write-Host "OK: remote media-inbox main updated."
 }
-
-Write-Host 'OK: remote media-inbox main updated.'
