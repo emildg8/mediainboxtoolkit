@@ -12,7 +12,7 @@
 
 
 ## 0.2.1 - 2026-05-04 18:42:21 +03:00
-- `.github/workflows/release.yml` — при push тега `v*.*.*` сборка ZIP (без `.git` / `.github` / `OLD` / `LOGS`) и публикация Release через `softprops/action-gh-release`.
+- `.github/workflows/release.yml` — при push тега `v*.*.*` сборка ZIP (без `.git` / `.github` / `OLD` / `LOGS`) и публикация Release через `softprops/action-gh-release`; `zip_path` в `GITHUB_OUTPUT` (глоб `*.zip` на Linux не подхватывался); `draft: false`.
 - `.github/scripts/Build-MediaInboxRelease.ps1` + `.github/templates/release-body.md.template` — красивое описание на русском: секции «Что нового» из `CHANGELOG.md`, состав архива, ffprobe/WinGet, ссылки, SHA-256.
 - `Publish-MediaInboxStandalone.ps1` — после `main` создаёт аннотированный тег `v<version>`, если его ещё нет на `media-inbox`; устойчивое удаление worktree `_mit_publish_tmp`.
 - `README.md`: как связаны тег, workflow и ZIP.
