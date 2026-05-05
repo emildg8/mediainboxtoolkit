@@ -516,6 +516,7 @@ $mitEpTitleFuzzMaxBasenameChars = 72
 $mitEpTitleFuzzMaxSeasonScan = 28
 $mitEpTitleFuzzPathHints = [System.Collections.Generic.List[object]]::new()
 $orphanSeasonFolderSeriesList = [System.Collections.Generic.List[object]]::new()
+$cartoonMovieBasenameRegexes = [System.Collections.Generic.List[string]]::new()
 if ($policy.PSObject.Properties.Name -contains 'classification' -and $null -ne $policy.classification) {
     $cf = $policy.classification
     if ($cf.PSObject.Properties.Name -contains 'folderSeasonContext' -and $null -ne $cf.folderSeasonContext) {
@@ -557,6 +558,12 @@ if ($policy.PSObject.Properties.Name -contains 'classification' -and $null -ne $
         $fm = $cf.featureMeter
         if ($fm.PSObject.Properties.Name -contains 'minSecondsForFullFeature') {
             try { $featureMeterMinSeconds = [int]$fm.minSecondsForFullFeature } catch { }
+        }
+    }
+    if ($cf.PSObject.Properties.Name -contains 'cartoonMovieBasenameRegexes' -and $null -ne $cf.cartoonMovieBasenameRegexes) {
+        foreach ($rx in @($cf.cartoonMovieBasenameRegexes)) {
+            $s = [string]$rx
+            if (-not [string]::IsNullOrWhiteSpace($s)) { [void]$cartoonMovieBasenameRegexes.Add($s.Trim()) }
         }
     }
     if ($cf.PSObject.Properties.Name -contains 'shortFormEpisodeTitleGuess' -and $null -ne $cf.shortFormEpisodeTitleGuess) {
@@ -1103,6 +1110,23 @@ foreach ($f in $files) {
         $ckConfInt = [Math]::Max($ckConfInt, $boost)
         $ckConf = [string]$ckConfInt
         $ckWhy = if ([string]::IsNullOrWhiteSpace($ckWhy)) { 'align_ck_to_series_classification' } else { "$ckWhy|align_ck_to_series_classification" }
+    }
+
+    if ($cls.Kind -eq 'movie' -and $cartoonMovieBasenameRegexes.Count -gt 0) {
+        $bn = $f.Name
+        foreach ($rx in $cartoonMovieBasenameRegexes) {
+            if ([string]::IsNullOrWhiteSpace($rx)) { continue }
+            try {
+                if ($bn -match $rx) {
+                    $ckKind = 'cartoon_movie'
+                    $ckConfInt = [Math]::Max($ckConfInt, 62)
+                    $ckConf = [string]$ckConfInt
+                    $ckWhy = if ([string]::IsNullOrWhiteSpace($ckWhy)) { 'cartoon_movie_basename_policy' } else { "$ckWhy|cartoon_movie_basename_policy" }
+                    break
+                }
+            }
+            catch { }
+        }
     }
 
     if ($safetyRequireInbox -and -not $f.FullName.StartsWith($prefixInbox, [StringComparison]::OrdinalIgnoreCase)) {

@@ -46,7 +46,10 @@
     "tvSpecialFilenameBoost": { "enabled": true },
     "movies": { "allowMissingYearIfTmdbMatched": true },
     "webTmdbResolve": { "enabled": true },
-    "featureMeter": { "minSecondsForFullFeature": 3600 }
+    "featureMeter": { "minSecondsForFullFeature": 3600 },
+    "cartoonMovieBasenameRegexes": [
+      "(?i)Alice\\.(?:in\\.)?Wonderland\\.1951"
+    ]
   },
   "scope": {
     "videoOnly": true

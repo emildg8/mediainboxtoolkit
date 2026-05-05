@@ -1,5 +1,11 @@
 ﻿# CHANGELOG
 
+## 0.2.18 - 2026-05-06 17:00:00 +03:00
+- **`MediaInboxToolkit.Engine.ps1`** — в **`classification.cartoonMovieBasenameRegexes`** (массив regex по имени файла): при `cls.Kind=movie` и совпадении с шаблоном выставляется вид контента **`cartoon_movie`** (уверенность ≥ 62, причина `cartoon_movie_basename_policy`), чтобы направлять в **`destinationsByKind.cartoon_movie`** без ожидания TMDB.
+- **`sort-inbox.video-under-sort*.example.json`** — пример regex для **Alice in Wonderland (1951)**.
+- **`docs/REVIEW-111-torrent-link-requests.md`** — нумерованный список 111 строк `REVIEW` для привязки HTML раздач.
+- **`README.md`** — описание ключа **`cartoonMovieBasenameRegexes`**.
+
 ## 0.2.17 - 2026-05-06 15:30:00 +03:00
 - **`Invoke-MediaInboxApplyReviewedCsv.ps1`** — назначение может лежать под **`MediaLibraryVideoRoot`** (корень `Video` на NAS: параметр **`-MediaLibraryVideoRoot`**, иначе `MIT_VIDEO_LIBRARY_ROOT`, иначе **`videoLibraryRoot`** из `media-library-layout.local.json`). Источник по-прежнему только под **`-InboxRoot`** (по умолчанию `…\Video\Sort`). Устраняет отказ `path_outside_inbox` при переносе из Sort в `Мультсериалы` / `Фильмы` и т.д.
 
