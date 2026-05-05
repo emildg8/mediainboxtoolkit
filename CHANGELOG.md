@@ -1,5 +1,8 @@
 ﻿# CHANGELOG
 
+## 0.2.19 - 2026-05-06 18:30:00 +03:00
+- **`MediaInboxToolkit.Engine.ps1`** — исправлено создание **отдельной папки сериала на каждый эпизод** (например «King of the Hill 801 …»): если в строке поиска/угадывании шоу попали код `801` + название эпизода, а TMDB не вернул короткое имя, **имя папки сериала** и кэш TMDB теперь берутся от **основы названия** (`Get-SortTvShowTitleFromPollutedGuess` / нормализация в `Normalize-SortSeriesSearchQuery`). Типичный случай — имена файлов вида `… 801 Patch …` без `S08E01`.
+
 ## 0.2.18 - 2026-05-06 17:00:00 +03:00
 - **`MediaInboxToolkit.Engine.ps1`** — в **`classification.cartoonMovieBasenameRegexes`** (массив regex по имени файла): при `cls.Kind=movie` и совпадении с шаблоном выставляется вид контента **`cartoon_movie`** (уверенность ≥ 62, причина `cartoon_movie_basename_policy`), чтобы направлять в **`destinationsByKind.cartoon_movie`** без ожидания TMDB.
 - **`sort-inbox.video-under-sort*.example.json`** — пример regex для **Alice in Wonderland (1951)**.

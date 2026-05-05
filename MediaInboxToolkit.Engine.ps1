@@ -76,9 +76,25 @@ function ConvertTo-SafeFolderName([string]$Name) {
     return $t
 }
 
+function Get-SortTvShowTitleFromPollutedGuess([string]$guess) {
+    if ([string]::IsNullOrWhiteSpace($guess)) { return '' }
+    $t = $guess.Trim()
+    $resThree = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($x in @('480', '540', '576', '720', '768', '900', '1080', '1440', '2160', '4320')) { [void]$resThree.Add($x) }
+    $m = [regex]::Match($t, '(?i)^(?<show>.+?)\s+(?<h>\d{3})(?=\s+[\p{L}])')
+    if ($m.Success) {
+        $h = $m.Groups['h'].Value
+        if (-not $resThree.Contains($h)) {
+            return $m.Groups['show'].Value.Trim()
+        }
+    }
+    return $t
+}
+
 function Normalize-SortSeriesSearchQuery([string]$s) {
     if ([string]::IsNullOrWhiteSpace($s)) { return '' }
-    $t = $s -replace '\.', ' '
+    $stem = Get-SortTvShowTitleFromPollutedGuess $s
+    $t = $stem -replace '\.', ' '
     $t = $t -replace '_', ' '
     $t = ($t -replace '\s+', ' ').Trim()
     return $t
@@ -677,12 +693,13 @@ function Get-CachedSeriesTmdbRow {
         [string]$ApiKey,
         [string]$Lang
     )
+    $stemForFolder = Get-SortTvShowTitleFromPollutedGuess $SeriesGuess
     $normQ = Normalize-SortSeriesSearchQuery $SeriesGuess
     if ([string]::IsNullOrWhiteSpace($normQ)) { $normQ = $SeriesGuess }
     if ($seriesResolveCache.ContainsKey($normQ)) { return $seriesResolveCache[$normQ] }
     $row = @{
         TvId         = $null
-        SeriesFolder = (ConvertTo-SafeFolderName $SeriesGuess)
+        SeriesFolder = (ConvertTo-SafeFolderName $stemForFolder)
         Notes        = ''
     }
     if ($UseTmdb -and -not [string]::IsNullOrWhiteSpace($ApiKey) -and (Get-Command Search-TmdbTvSeries -ErrorAction SilentlyContinue)) {
@@ -912,7 +929,10 @@ function Invoke-MediaInboxRuntimeWebSeriesReclassify {
     }
     if (-not $tvId) { return $Cls }
     $sg = Remove-SortReleaseTechnicalTokens $tvName
-    if ([string]::IsNullOrWhiteSpace($sg)) { $sg = $clean }
+    if ([string]::IsNullOrWhiteSpace($sg)) {
+        $sg = Get-SortTvShowTitleFromPollutedGuess $clean
+        if ([string]::IsNullOrWhiteSpace($sg)) { $sg = $clean }
+    }
     $epTitle = Get-MediaInboxEpisodeTitleTailFromBasename $base
     $o = [pscustomobject]@{
         Kind         = 'series'
@@ -1048,7 +1068,10 @@ function Invoke-MediaInboxEpisodeTitleFuzzyReclassify {
                 $sg = Remove-SortReleaseTechnicalTokens ([string]$dd.name)
             }
         }
-        if ([string]::IsNullOrWhiteSpace($sg)) { $sg = $clean }
+        if ([string]::IsNullOrWhiteSpace($sg)) {
+            $sg = Get-SortTvShowTitleFromPollutedGuess $clean
+            if ([string]::IsNullOrWhiteSpace($sg)) { $sg = $clean }
+        }
         $o = [pscustomobject]@{
             Kind         = 'series'
             Season       = [int]$found.Season
