@@ -12,6 +12,7 @@
   - если в пути источника и в имени .torrent есть один и тот же rutracker-ID (rutracker-1234567) — жёсткое сопоставление без fuzzy
   - метаданные .torrent (bencode): слова из info.name и имён видеофайлов в раздаче; уникальное совпадение имени листа .mkv/.mp4/... с одной раздачей
   - опционально qBittorrent Web API: полный путь файла на диске клиента -> та же раздача (по info_hash), без хардкода URL (параметры или MIT_QBIT_*)
+  - если файлы перенесли с каталога загрузок qBittorrent на NAS: префиксы -QbittorrentCsvSourcePrefix и -QbittorrentDownloadRootPrefix подставляют путь «как у клиента» для поиска в индексе
 #>
 [CmdletBinding()]
 param(
@@ -22,7 +23,9 @@ param(
     [string]$QbittorrentWebUiUrl = '',
     [string]$QbittorrentUsername = '',
     [string]$QbittorrentPassword = '',
-    [switch]$QbittorrentSkipCertificateCheck
+    [switch]$QbittorrentSkipCertificateCheck,
+    [string]$QbittorrentCsvSourcePrefix = '',
+    [string]$QbittorrentDownloadRootPrefix = ''
 )
 
 Set-StrictMode -Version Latest
@@ -43,6 +46,14 @@ if ([string]::IsNullOrWhiteSpace($QbittorrentPassword)) {
     $QbittorrentPassword = [Environment]::GetEnvironmentVariable('MIT_QBIT_PASS')
 }
 if ($null -eq $QbittorrentPassword) { $QbittorrentPassword = '' }
+if ([string]::IsNullOrWhiteSpace($QbittorrentCsvSourcePrefix)) {
+    $QbittorrentCsvSourcePrefix = [Environment]::GetEnvironmentVariable('MIT_QBIT_CSV_PREFIX')
+}
+if ($null -eq $QbittorrentCsvSourcePrefix) { $QbittorrentCsvSourcePrefix = '' }
+if ([string]::IsNullOrWhiteSpace($QbittorrentDownloadRootPrefix)) {
+    $QbittorrentDownloadRootPrefix = [Environment]::GetEnvironmentVariable('MIT_QBIT_DOWNLOAD_ROOT')
+}
+if ($null -eq $QbittorrentDownloadRootPrefix) { $QbittorrentDownloadRootPrefix = '' }
 
 $CsvPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($CsvPath)
 if (-not (Test-Path -LiteralPath $CsvPath)) { throw "CSV not found: $CsvPath" }
@@ -233,6 +244,37 @@ function Get-TorrentHintByUniqueVideoLeaf {
     return $TorrentHints[$onlyIx]
 }
 
+function Get-QbitPathKeysForLookup {
+    param(
+        [string]$SourceFullPath,
+        [string]$CsvRootPrefix,
+        [string]$QbittorrentDownloadRoot
+    )
+    $keys = [System.Collections.Generic.List[string]]::new()
+    $k0 = Normalize-MediaInboxPathKey $SourceFullPath
+    if (-not [string]::IsNullOrWhiteSpace($k0)) {
+        [void]$keys.Add($k0)
+    }
+    if ([string]::IsNullOrWhiteSpace($CsvRootPrefix) -or [string]::IsNullOrWhiteSpace($QbittorrentDownloadRoot)) {
+        return $keys.ToArray()
+    }
+    $pfx = Normalize-MediaInboxPathKey $CsvRootPrefix
+    if ([string]::IsNullOrWhiteSpace($pfx) -or [string]::IsNullOrWhiteSpace($k0)) {
+        return $keys.ToArray()
+    }
+    if (-not $k0.StartsWith($pfx, [StringComparison]::Ordinal)) {
+        return $keys.ToArray()
+    }
+    $tail = $k0.Substring($pfx.Length).TrimStart('\')
+    $dl = $QbittorrentDownloadRoot.TrimEnd('\')
+    $candidate = if ([string]::IsNullOrWhiteSpace($tail)) { $dl } else { $dl + '\' + $tail }
+    $k1 = Normalize-MediaInboxPathKey $candidate
+    if (-not [string]::IsNullOrWhiteSpace($k1) -and -not $keys.Contains($k1)) {
+        [void]$keys.Add($k1)
+    }
+    return $keys.ToArray()
+}
+
 function Find-BestTorrentHint {
     param(
         [string]$SourcePath,
@@ -400,9 +442,14 @@ $outRows = foreach ($r in $rows) {
                 $appliedTorrent = Try-ApplyTorrentHintToReviewRow -Hint $topicHit -Epi $epi -Series $series -Src $src -CurrentDest $dst -Note "auto_from_rutracker_topic:$($topicHit.TopicId)" -Rule 'tracker_topic_repath_apply'
             }
             if ($null -eq $appliedTorrent -and $qbitPathToHint.Count -gt 0) {
-                $pathKey = Normalize-MediaInboxPathKey $src
-                if (-not [string]::IsNullOrWhiteSpace($pathKey) -and $qbitPathToHint.ContainsKey($pathKey)) {
-                    $qIx = $qbitPathToHint[$pathKey]
+                $qIx = $null
+                foreach ($pathKey in (Get-QbitPathKeysForLookup -SourceFullPath $src -CsvRootPrefix $QbittorrentCsvSourcePrefix -QbittorrentDownloadRoot $QbittorrentDownloadRootPrefix)) {
+                    if (-not [string]::IsNullOrWhiteSpace($pathKey) -and $qbitPathToHint.ContainsKey($pathKey)) {
+                        $qIx = $qbitPathToHint[$pathKey]
+                        break
+                    }
+                }
+                if ($null -ne $qIx) {
                     $qHint = $torrentHints[$qIx]
                     $qNote = if (-not [string]::IsNullOrWhiteSpace([string]$qHint.TopicId)) {
                         "auto_from_qbit_path_topic:$($qHint.TopicId)"

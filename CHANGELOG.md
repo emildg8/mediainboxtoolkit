@@ -1,5 +1,9 @@
 ﻿# CHANGELOG
 
+## 0.2.10 - 2026-05-06 01:00:00 +03:00
+- `Update-MediaInboxReviewCsvAutoDecide.ps1` — сопоставление с qBittorrent при **переносе** файлов: `-QbittorrentCsvSourcePrefix` + `-QbittorrentDownloadRootPrefix` (или `MIT_QBIT_CSV_PREFIX` / `MIT_QBIT_DOWNLOAD_ROOT`) подставляют путь «как в каталоге загрузок» для строк CSV под корнем сортировки.
+- `README.md` — пример сценария UNC downloads → Sort.
+
 ## 0.2.9 - 2026-05-05 22:30:00 +03:00
 - `Qbittorrent-WebApi.ps1` — если Web UI **без пароля**: сначала запрос `app/webapiVersion`, без `auth/login`; безопасный доступ к полям (`content_path` и др. могут отсутствовать в старых API / при StrictMode).
 - Проверка ответа `auth/login`: тело `Fails.` считается ошибкой.
