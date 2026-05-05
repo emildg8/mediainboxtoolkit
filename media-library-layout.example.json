@@ -1,5 +1,10 @@
 {
   "videoLibraryRoot": "",
+  "qbittorrent": {
+    "webUiUrl": "",
+    "csvSourcePrefix": "",
+    "downloadRootPrefix": ""
+  },
   "seriesEpisodeDestinationDir": "Мультсериалы",
   "scanRoots": ["Мультсериалы", "Сериалы", "Анимесериалы"],
   "animeSeriesScanRoot": "Анимесериалы",
@@ -10,8 +15,14 @@
   "explicitRules": [
     {
       "id": "RobotChicken",
-      "fileRegex": "(?i)Robot\\.Chicken",
+      "fileRegex": "(?i)Robot[.\\s]+Chicken",
       "folderRegex": "(?i)(Robot\\s*Chicken|Робоцып|RoboChicken)",
+      "libraryRoot": "Мультсериалы"
+    },
+    {
+      "id": "ArcherExtrasPerfectDay",
+      "fileRegex": "(?i)Perfect\\s+Day",
+      "folderRegex": "(?i)(Archer|Арчер)",
       "libraryRoot": "Мультсериалы"
     }
   ]

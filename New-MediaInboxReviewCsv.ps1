@@ -2,12 +2,16 @@
 <#
 .SYNOPSIS
   Создаёт копию dryrun CSV для ручной разметки (Decision / DecisionNote).
+.DESCRIPTION
+  По умолчанию APPLY только при Confidence >= 70. Для сериалов с уже собранным путём (в DestFullPath есть « - SxxEyy - ») можно снизить порог отдельно (по умолчанию 55), не трогая фильмы с низкой уверенностью.
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$CsvPath,
-    [string]$OutCsvPath = ''
+    [string]$OutCsvPath = '',
+    [int]$ApplyMinConfidence = 70,
+    [int]$SeriesEpisodeStructuredMinConfidence = 55
 )
 
 Set-StrictMode -Version Latest
@@ -26,7 +30,21 @@ $rows = @(Import-Csv -LiteralPath $CsvPath)
 $out = foreach ($r in $rows) {
     $conf = 0
     try { $conf = [int]$r.Confidence } catch { $conf = 0 }
-    $defaultDecision = if (($r.DestRootKey -ne 'review') -and $conf -ge 70) { 'APPLY' } else { 'REVIEW' }
+    $destRoot = [string]$r.DestRootKey
+    $destFull = [string]$r.DestFullPath
+    $structuredSeries = ($destRoot -eq 'series') -and ($destFull -match ' - S\d{2}E\d{2} - ')
+    $defaultDecision = 'REVIEW'
+    if (($destRoot -ne 'review') -and ($conf -ge $ApplyMinConfidence)) {
+        $defaultDecision = 'APPLY'
+    }
+    elseif (
+        ($SeriesEpisodeStructuredMinConfidence -gt 0) -and
+        ($destRoot -ne 'review') -and
+        $structuredSeries -and
+        ($conf -ge $SeriesEpisodeStructuredMinConfidence)
+    ) {
+        $defaultDecision = 'APPLY'
+    }
     [pscustomobject]@{
         HumanOverride         = ''
         HumanComment          = ''

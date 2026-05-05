@@ -11,8 +11,8 @@
   - optional torrent hints: fuzzy token match from .torrent names => APPLY for review rows
   - если в пути источника и в имени .torrent есть один и тот же rutracker-ID (rutracker-1234567) — жёсткое сопоставление без fuzzy
   - метаданные .torrent (bencode): слова из info.name и имён видеофайлов в раздаче; уникальное совпадение имени листа .mkv/.mp4/... с одной раздачей
-  - опционально qBittorrent Web API: полный путь файла на диске клиента -> та же раздача (по info_hash), без хардкода URL (параметры или MIT_QBIT_*)
-  - если файлы перенесли с каталога загрузок qBittorrent на NAS: префиксы -QbittorrentCsvSourcePrefix и -QbittorrentDownloadRootPrefix подставляют путь «как у клиента» для поиска в индексе
+  - опционально qBittorrent Web API: полный путь файла на диске клиента -> та же раздача (по info_hash); URL и префиксы путей: параметры, MIT_QBIT_*, либо блок **qbittorrent** в media-library-layout JSON
+  - при ничьей по счёту слов у торрент-хинтов: совпадение имени листа с файлом, номер эпизода в именах из .torrent, rutracker id в пути; при двух кандидатах и mit_dur_s≈ffprobe — предпочтение раздаче с одним видео-листом
   - спецвыпуски без SxxEyy: папки сериалов под корнем из videoLibraryRoot в JSON / MIT_VIDEO_LIBRARY_ROOT / эвристике; при наличии рядом media-library-layout.local.json — читается автоматически; для Анимесериалов при OVA/ONA в имени — подпапка OVA
 #>
 [CmdletBinding()]
@@ -38,6 +38,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'TorrentBencode.ps1')
 . (Join-Path $PSScriptRoot 'Qbittorrent-WebApi.ps1')
 . (Join-Path $PSScriptRoot 'MediaLibraryLayout.ps1')
+. (Join-Path $PSScriptRoot 'MediaInboxFfprobe.ps1')
 
 $script:MitMediaLayout = Get-DefaultMediaLibraryLayout
 $script:MitLibraryRoot = $null
@@ -497,27 +498,94 @@ function Get-QbitPathKeysForLookup {
     return $keys.ToArray()
 }
 
+function Resolve-TorrentHintScoreTie {
+    param(
+        [string]$SourcePath,
+        [object[]]$Candidates,
+        [string]$Notes = ''
+    )
+    if ($null -eq $Candidates -or $Candidates.Count -eq 0) { return $null }
+    if ($Candidates.Count -eq 1) { return $Candidates[0] }
+    $leaf = [System.IO.Path]::GetFileName($SourcePath)
+    if (-not [string]::IsNullOrWhiteSpace($leaf)) {
+        $leafL = $leaf.ToLowerInvariant()
+        $byLeaf = @($Candidates | Where-Object {
+                foreach ($x in $_.VideoLeaves) {
+                    if ([string]::IsNullOrWhiteSpace($x)) { continue }
+                    if ($x.ToLowerInvariant() -eq $leafL) { return $true }
+                }
+                return $false
+            })
+        if ($byLeaf.Count -eq 1) { return $byLeaf[0] }
+    }
+    $epi = Get-EpisodeInfo -FileName $leaf
+    if ($null -ne $epi -and [int]$epi.Episode -gt 0) {
+        $s = [int]$epi.Season
+        $e = [int]$epi.Episode
+        $patterns = [System.Collections.Generic.List[string]]::new()
+        if ($s -gt 0) {
+            [void]$patterns.Add(('S{0:D2}E{1:D2}' -f $s, $e))
+            [void]$patterns.Add(('S{0}E{1}' -f $s, $e))
+        }
+        [void]$patterns.Add(('E{0:D2}' -f $e))
+        [void]$patterns.Add(('E{0}' -f $e))
+        $byEp = @($Candidates | Where-Object {
+                foreach ($vl in $_.VideoLeaves) {
+                    if ([string]::IsNullOrWhiteSpace($vl)) { continue }
+                    foreach ($p in $patterns) {
+                        if ($vl.IndexOf($p, [StringComparison]::OrdinalIgnoreCase) -ge 0) { return $true }
+                    }
+                }
+                return $false
+            })
+        if ($byEp.Count -eq 1) { return $byEp[0] }
+    }
+    foreach ($tid in Get-SourceTrackerTopicIds $SourcePath) {
+        $byTopic = @($Candidates | Where-Object { $_.TopicId -eq $tid })
+        if ($byTopic.Count -eq 1) { return $byTopic[0] }
+    }
+    if ($Candidates.Count -eq 2 -and -not [string]::IsNullOrWhiteSpace($Notes) -and (Test-Path -LiteralPath $SourcePath)) {
+        $md = [regex]::Match($Notes, 'mit_dur_s=(\d+)')
+        if ($md.Success) {
+            try {
+                $mit = [int]$md.Groups[1].Value
+                $prob = Get-MitVideoDurationSeconds -LiteralPath $SourcePath
+                if ($null -ne $prob -and $mit -gt 60 -and [math]::Abs($prob - $mit) -le 40) {
+                    $sorted = @($Candidates | Sort-Object { $_.VideoLeaves.Count })
+                    if ($sorted.Count -eq 2 -and $sorted[0].VideoLeaves.Count -eq 1 -and $sorted[1].VideoLeaves.Count -gt 1) {
+                        return $sorted[0]
+                    }
+                }
+            }
+            catch { }
+        }
+    }
+    return $null
+}
+
 function Find-BestTorrentHint {
     param(
         [string]$SourcePath,
-        [object[]]$TorrentHints
+        [object[]]$TorrentHints,
+        [string]$Notes = ''
     )
     if ($null -eq $TorrentHints -or $TorrentHints.Count -eq 0) { return $null }
     $sourceWords = Get-WordSet $SourcePath
     if ($sourceWords.Count -eq 0) { return $null }
 
-    $best = $null
-    $bestScore = 0
-    foreach ($t in $TorrentHints) {
+    $scored = foreach ($t in $TorrentHints) {
         $inter = @($sourceWords | Where-Object { $t.Words -contains $_ })
-        $score = $inter.Count
-        if ($score -gt $bestScore) {
-            $bestScore = $score
-            $best = $t
-        }
+        [pscustomobject]@{ T = $t; Score = $inter.Count }
     }
-    if ($bestScore -lt 4) { return $null }
-    return [pscustomobject]@{ Torrent = $best; Score = $bestScore }
+    $maxScore = ($scored | Measure-Object -Property Score -Maximum).Maximum
+    if ($maxScore -lt 4) { return $null }
+    $tops = @($scored | Where-Object { $_.Score -eq $maxScore } | ForEach-Object { $_.T })
+    if ($tops.Count -eq 1) {
+        return [pscustomobject]@{ Torrent = $tops[0]; Score = $maxScore }
+    }
+    $picked = Resolve-TorrentHintScoreTie -SourcePath $SourcePath -Candidates $tops -Notes $Notes
+    if ($null -eq $picked) { return $null }
+    return [pscustomobject]@{ Torrent = $picked; Score = $maxScore }
 }
 
 $rows = @(Import-Csv -LiteralPath $CsvPath)
@@ -525,6 +593,39 @@ if ($rows.Count -eq 0) { throw "CSV has no rows: $CsvPath" }
 
 $hasDecision = $rows[0].PSObject.Properties.Name -contains 'Decision'
 $hasDecisionNote = $rows[0].PSObject.Properties.Name -contains 'DecisionNote'
+
+$pathForLibRoot = [string]$($rows | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.DestFullPath) -and ([string]$_.DestFullPath -like '*\Video\*') } | Select-Object -First 1 -ExpandProperty DestFullPath)
+if ([string]::IsNullOrWhiteSpace($pathForLibRoot)) {
+    $pathForLibRoot = [string]$($rows | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.SourceFullPath) -and ([string]$_.SourceFullPath -like '*\Video\*') } | Select-Object -First 1 -ExpandProperty SourceFullPath)
+}
+$mj = $MediaLibraryLayoutJson
+if ([string]::IsNullOrWhiteSpace($mj)) {
+    $mj = [Environment]::GetEnvironmentVariable('MIT_MEDIA_LIBRARY_JSON')
+}
+if ([string]::IsNullOrWhiteSpace($mj)) {
+    $defaultLocalLayout = Join-Path $PSScriptRoot 'media-library-layout.local.json'
+    if (Test-Path -LiteralPath $defaultLocalLayout) {
+        $mj = $defaultLocalLayout
+    }
+}
+$script:MitMediaLayout = Read-MediaLibraryLayout $mj
+$Lqb = $script:MitMediaLayout
+if ($null -ne $Lqb) {
+    if ([string]::IsNullOrWhiteSpace($QbittorrentWebUiUrl) -and ($Lqb.PSObject.Properties.Name -contains 'QbittorrentWebUiUrl')) {
+        $x = [string]$Lqb.QbittorrentWebUiUrl
+        if (-not [string]::IsNullOrWhiteSpace($x)) { $QbittorrentWebUiUrl = $x.Trim() }
+    }
+    if ([string]::IsNullOrWhiteSpace($QbittorrentCsvSourcePrefix) -and ($Lqb.PSObject.Properties.Name -contains 'QbittorrentCsvSourcePrefix')) {
+        $x = [string]$Lqb.QbittorrentCsvSourcePrefix
+        if (-not [string]::IsNullOrWhiteSpace($x)) { $QbittorrentCsvSourcePrefix = $x.TrimEnd('\') }
+    }
+    if ([string]::IsNullOrWhiteSpace($QbittorrentDownloadRootPrefix) -and ($Lqb.PSObject.Properties.Name -contains 'QbittorrentDownloadRootPrefix')) {
+        $x = [string]$Lqb.QbittorrentDownloadRootPrefix
+        if (-not [string]::IsNullOrWhiteSpace($x)) { $QbittorrentDownloadRootPrefix = $x.TrimEnd('\') }
+    }
+}
+$script:MitLibraryRoot = Resolve-MediaLibraryVideoRoot -ExplicitRoot $MediaLibraryVideoRoot -PathHint $pathForLibRoot -LayoutRoot ([string]$script:MitMediaLayout.VideoLibraryRoot)
+$script:MitSeriesIndex = @(Build-MediaLibrarySeriesIndex -LibraryVideoRoot $script:MitLibraryRoot -ScanRoots $script:MitMediaLayout.ScanRoots)
 
 $torrentHints = @()
 if (-not [string]::IsNullOrWhiteSpace($TorrentDirectory)) {
@@ -612,24 +713,6 @@ $apply = 0
 $skip = 0
 $review = 0
 $autoRepath = 0
-
-$pathForLibRoot = [string]$($rows | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.DestFullPath) -and ([string]$_.DestFullPath -like '*\Video\*') } | Select-Object -First 1 -ExpandProperty DestFullPath)
-if ([string]::IsNullOrWhiteSpace($pathForLibRoot)) {
-    $pathForLibRoot = [string]$($rows | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.SourceFullPath) -and ([string]$_.SourceFullPath -like '*\Video\*') } | Select-Object -First 1 -ExpandProperty SourceFullPath)
-}
-$mj = $MediaLibraryLayoutJson
-if ([string]::IsNullOrWhiteSpace($mj)) {
-    $mj = [Environment]::GetEnvironmentVariable('MIT_MEDIA_LIBRARY_JSON')
-}
-if ([string]::IsNullOrWhiteSpace($mj)) {
-    $defaultLocalLayout = Join-Path $PSScriptRoot 'media-library-layout.local.json'
-    if (Test-Path -LiteralPath $defaultLocalLayout) {
-        $mj = $defaultLocalLayout
-    }
-}
-$script:MitMediaLayout = Read-MediaLibraryLayout $mj
-$script:MitLibraryRoot = Resolve-MediaLibraryVideoRoot -ExplicitRoot $MediaLibraryVideoRoot -PathHint $pathForLibRoot -LayoutRoot ([string]$script:MitMediaLayout.VideoLibraryRoot)
-$script:MitSeriesIndex = @(Build-MediaLibrarySeriesIndex -LibraryVideoRoot $script:MitLibraryRoot -ScanRoots $script:MitMediaLayout.ScanRoots)
 
 $outRows = foreach ($r in $rows) {
     $src = [string]$r.SourceFullPath
@@ -726,7 +809,7 @@ $outRows = foreach ($r in $rows) {
                 }
             }
             if ($null -eq $appliedTorrent) {
-                $hint = Find-BestTorrentHint -SourcePath $src -TorrentHints $torrentHints
+                $hint = Find-BestTorrentHint -SourcePath $src -TorrentHints $torrentHints -Notes $notes
                 if ($null -ne $hint) {
                     $appliedTorrent = Try-ApplyTorrentHintToReviewRow -Hint $hint.Torrent -Epi $epi -Series $series -Src $src -CurrentDest $dst -Note "auto_from_torrent_score:$($hint.Score)" -Rule 'torrent_repath_apply'
                 }

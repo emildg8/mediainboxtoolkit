@@ -1,5 +1,11 @@
 ﻿# CHANGELOG
 
+## 0.2.16 - 2026-05-06 14:00:00 +03:00
+- **`New-MediaInboxReviewCsv.ps1`** — параметры **`-ApplyMinConfidence`** (по умолчанию 70) и **`-SeriesEpisodeStructuredMinConfidence`** (по умолчанию 55): для строк с `DestRootKey=series` и фрагментом ` - SxxEyy - ` в `DestFullPath` можно помечать **APPLY** при более низкой уверенности, не ослабляя порог для фильмов.
+- **`Update-MediaInboxReviewCsvAutoDecide.ps1`** — развязка «ничьей» между торрент-хинтами с одинаковым счётом слов: лист = имя файла, номер эпизода в именах файлов `.torrent`, rutracker id в пути; при двух кандидатах и близости **mit_dur_s** к **ffprobe** — предпочтение раздаче с одним видео-листом. Подключён **`MediaInboxFfprobe.ps1`**.
+- **`MediaLibraryLayout` / `media-library-layout.*.json`** — блок **`qbittorrent`**: `webUiUrl`, `csvSourcePrefix`, `downloadRootPrefix` (если не заданы параметры скрипта и не заданы `MIT_QBIT_*`).
+- **`media-library-layout.example.json`** — пример **explicitRule** `ArcherExtrasPerfectDay` (узкий `Perfect Day` + папка Archer); у **RobotChicken** расширен **`fileRegex`** до `Robot[.\s]+Chicken` (имена с пробелом, без точки). **`README.md`** и **`sort-inbox.video-under-sort.cyrillic.example.json`** — заметки про qBit, ffprobe и политику TMDB.
+
 ## 0.2.15 - 2026-05-06 12:00:00 +03:00
 - Корневой **`.gitignore`** — явная строка **`MediaInboxToolkit/media-library-layout.local.json`**, чтобы локальный UNC и правила библиотеки не попадали в коммиты.
 - Зафиксирован проверенный сценарий на реальном dry-run CSV (~4000 строк, `\\Emilian_TNAS\emildg8\Video\Sort`): **`New-MediaInboxReviewCsv.ps1`** → **`Update-MediaInboxReviewCsvAutoDecide.ps1`** с **`-TorrentDirectory`** (`%USERPROFILE%\Downloads`, сотни `.torrent`). При доступном NAS и **`media-library-layout.local.json`**: **`MediaLibraryRoot`** резолвится в `Video`, индекс сериалов (**`SeriesIndexEntries`**) в порядка **300** имён папок; доля **`REVIEW`** после автодоразметки **~128** строк (без торрентов было **~321**).

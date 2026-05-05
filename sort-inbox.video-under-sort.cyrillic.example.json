@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "meta": {
-    "description": "Обезличенный вариант: те же правила, что у sort-inbox.video-under-sort.example.json, но корни назначений под Sort\\Video — на кириллице (как типичная библиотека RU). Скопируйте в sort-inbox.*.local.json.",
+    "description": "Обезличенный вариант: те же правила, что у sort-inbox.video-under-sort.example.json, но корни назначений под Sort\\Video — на кириллице (как типичная библиотека RU). Скопируйте в sort-inbox.*.local.json. Чтобы меньше фильмов уходило в ручной REVIEW без TMDB в Notes, держите classification.webTmdbResolve.enabled true и при необходимости усильте повторный прогон MediaInboxToolkit с -UseTmdb; порог destinationsByKindMinConfidence меняйте осознанно (влияет на выбор корня kind, не на порог Decision в review CSV).",
     "updatedAt": "2026-05-05",
     "skeletonProfile": "cyrillic"
   },

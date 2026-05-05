@@ -6,6 +6,9 @@ Set-StrictMode -Version Latest
 function Get-DefaultMediaLibraryLayout {
     return [pscustomobject]@{
         VideoLibraryRoot              = ''
+        QbittorrentWebUiUrl           = ''
+        QbittorrentCsvSourcePrefix    = ''
+        QbittorrentDownloadRootPrefix = ''
         SeriesEpisodeDestinationDir = 'cartoons'
         ScanRoots                   = @('cartoons')
         AnimeSeriesScanRoot         = ''
@@ -16,7 +19,7 @@ function Get-DefaultMediaLibraryLayout {
         ExplicitRules               = @(
             [pscustomobject]@{
                 Id          = 'RobotChicken'
-                FileRegex   = '(?i)Robot\.Chicken'
+                FileRegex   = '(?i)Robot[.\s]+Chicken'
                 FolderRegex = '(?i)(Robot\s*Chicken|RoboChicken)'
                 LibraryRoot = 'cartoons'
             }
@@ -57,8 +60,19 @@ function ConvertTo-MediaLibraryLayoutObject {
         $vroot = [string]$JsonObj.videoLibraryRoot
     }
 
+    $qUrl = ''; $qCsv = ''; $qDl = ''
+    if ($null -ne $JsonObj.qbittorrent) {
+        $qb = $JsonObj.qbittorrent
+        if ($null -ne $qb.webUiUrl -and -not [string]::IsNullOrWhiteSpace([string]$qb.webUiUrl)) { $qUrl = [string]$qb.webUiUrl.Trim() }
+        if ($null -ne $qb.csvSourcePrefix -and -not [string]::IsNullOrWhiteSpace([string]$qb.csvSourcePrefix)) { $qCsv = [string]$qb.csvSourcePrefix.TrimEnd('\') }
+        if ($null -ne $qb.downloadRootPrefix -and -not [string]::IsNullOrWhiteSpace([string]$qb.downloadRootPrefix)) { $qDl = [string]$qb.downloadRootPrefix.TrimEnd('\') }
+    }
+
     return [pscustomobject]@{
         VideoLibraryRoot              = $vroot
+        QbittorrentWebUiUrl           = $qUrl
+        QbittorrentCsvSourcePrefix    = $qCsv
+        QbittorrentDownloadRootPrefix = $qDl
         SeriesEpisodeDestinationDir = if ($JsonObj.seriesEpisodeDestinationDir) { [string]$JsonObj.seriesEpisodeDestinationDir } else { $def.SeriesEpisodeDestinationDir }
         ScanRoots                   = $scan
         AnimeSeriesScanRoot         = if ($JsonObj.animeSeriesScanRoot) { [string]$JsonObj.animeSeriesScanRoot } else { [string]$def.AnimeSeriesScanRoot }
