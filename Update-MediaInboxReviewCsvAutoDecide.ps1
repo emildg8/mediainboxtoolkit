@@ -7,13 +7,13 @@
   - source under \_Workspace\ => SKIP (legacy noise)
   - rows with tmdb_movie/tmdb_tv note and non-review destination => APPLY
   - rows with episode_code_in_filename and non-review destination => APPLY
-  - review rows: source-pattern series detection + episode parse => APPLY to cartoons (эпизод: S01E02, S01.E02, _S01E02_, последний SxxEyy в имени, 7xx «сезон+эпизод», Eps21-22, «… 3 (12)», ведущий номер)
+  - review rows: source-pattern series detection + episode parse => APPLY под каталог из layout (`seriesEpisodeDestinationDir`, по умолчанию как у мультсериалов; эпизод: S01E02, S01.E02, _S01E02_, последний SxxEyy в имени, 7xx «сезон+эпизод», Eps21-22, «… 3 (12)», ведущий номер)
   - optional torrent hints: fuzzy token match from .torrent names => APPLY for review rows
   - если в пути источника и в имени .torrent есть один и тот же rutracker-ID (rutracker-1234567) — жёсткое сопоставление без fuzzy
   - метаданные .torrent (bencode): слова из info.name и имён видеофайлов в раздаче; уникальное совпадение имени листа .mkv/.mp4/... с одной раздачей
   - опционально qBittorrent Web API: полный путь файла на диске клиента -> та же раздача (по info_hash), без хардкода URL (параметры или MIT_QBIT_*)
   - если файлы перенесли с каталога загрузок qBittorrent на NAS: префиксы -QbittorrentCsvSourcePrefix и -QbittorrentDownloadRootPrefix подставляют путь «как у клиента» для поиска в индексе
-  - спецвыпуски без SxxEyy: если на NAS уже есть папка сериала под Video\\cartoons\\<имя>, файл кладётся прямо в неё (корень сериала), см. Get-FlatSpecialLibraryRules
+  - спецвыпуски без SxxEyy: папки сериалов ищутся под реальным корнем NAS (\\…\\Video\\Мультсериалы и т.д.), см. media-library-layout.example.json; для Анимесериалов при OVA/ONA в имени — подпапка OVA
 #>
 [CmdletBinding()]
 param(
@@ -27,7 +27,9 @@ param(
     [switch]$QbittorrentSkipCertificateCheck,
     [string]$QbittorrentCsvSourcePrefix = '',
     [string]$QbittorrentDownloadRootPrefix = '',
-    [switch]$SkipCartoonSeriesRootFlat
+    [switch]$SkipCartoonSeriesRootFlat,
+    [string]$MediaLibraryLayoutJson = '',
+    [string]$MediaLibraryVideoRoot = ''
 )
 
 Set-StrictMode -Version Latest
@@ -35,6 +37,11 @@ $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'TorrentBencode.ps1')
 . (Join-Path $PSScriptRoot 'Qbittorrent-WebApi.ps1')
+. (Join-Path $PSScriptRoot 'MediaLibraryLayout.ps1')
+
+$script:MitMediaLayout = Get-DefaultMediaLibraryLayout
+$script:MitLibraryRoot = $null
+$script:MitSeriesIndex = @()
 
 if ([string]::IsNullOrWhiteSpace($QbittorrentWebUiUrl)) {
     $QbittorrentWebUiUrl = [Environment]::GetEnvironmentVariable('MIT_QBIT_WEBUI')
@@ -266,46 +273,120 @@ function Get-VideoLibraryRootFromPath {
     return $AnyPathBelowVideo.Substring(0, $idx + 7)
 }
 
-function Get-FlatSpecialLibraryRules {
-    return @(
-        @{
-            Id               = 'RobotChicken'
-            FileNameRegex    = '(?i)Robot\.Chicken'
-            FolderNameRegex  = '(?i)(Robot\s*Chicken|Робоцып|RoboChicken)'
+function Get-TmdbQueryTokenBag {
+    param([string]$Notes)
+    $bag = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    if ([string]::IsNullOrWhiteSpace($Notes)) { return $bag }
+    foreach ($m in [regex]::Matches($Notes, 'tmdb_tv_query=([^;]+)')) {
+        foreach ($w in (Get-WordSet $m.Groups[1].Value)) {
+            if ($w.Length -ge 4) { [void]$bag.Add($w) }
         }
-    )
+    }
+    foreach ($m in [regex]::Matches($Notes, 'tmdb_movie_query=([^;]+)')) {
+        foreach ($w in (Get-WordSet $m.Groups[1].Value)) {
+            if ($w.Length -ge 4) { [void]$bag.Add($w) }
+        }
+    }
+    return $bag
 }
 
-function Find-CartoonSeriesFolderForFlatSpecial {
+function Find-MediaLibraryExplicitFlatHit {
     param(
         [string]$SourceFullPath,
-        [string[]]$CartoonSeriesDirNames
+        [object[]]$SeriesIndex,
+        $Layout
     )
-    if ($null -eq $CartoonSeriesDirNames -or $CartoonSeriesDirNames.Count -eq 0) { return $null }
+    if ($null -eq $SeriesIndex -or $SeriesIndex.Count -eq 0 -or $null -eq $Layout) { return $null }
     $base = [System.IO.Path]::GetFileNameWithoutExtension([System.IO.Path]::GetFileName($SourceFullPath))
-    foreach ($rule in Get-FlatSpecialLibraryRules) {
-        if ($base -notmatch $rule.FileNameRegex) { continue }
-        foreach ($dirName in $CartoonSeriesDirNames) {
-            if ([string]::IsNullOrWhiteSpace($dirName)) { continue }
-            if ($dirName -match $rule.FolderNameRegex) {
-                return [pscustomobject]@{ FolderName = $dirName; RuleId = $rule.Id }
+    foreach ($rule in $Layout.ExplicitRules) {
+        if ([string]::IsNullOrWhiteSpace($rule.FileRegex) -or ($base -notmatch $rule.FileRegex)) { continue }
+        foreach ($ent in $SeriesIndex) {
+            if (-not [string]::IsNullOrWhiteSpace($rule.LibraryRoot) -and $ent.LibraryRoot -ne $rule.LibraryRoot) { continue }
+            if ([string]::IsNullOrWhiteSpace($rule.FolderRegex)) { continue }
+            if ($ent.SeriesFolder -match $rule.FolderRegex) {
+                $useOva = $false
+                if (-not [string]::IsNullOrWhiteSpace($Layout.AnimeSeriesScanRoot) -and
+                    $ent.LibraryRoot -eq $Layout.AnimeSeriesScanRoot -and
+                    (Test-MediaLibraryOvaFilename -FileBaseName $base -OvaRegex $Layout.OvaFilenameRegex)) {
+                    $useOva = $true
+                }
+                return [pscustomobject]@{
+                    LibraryRoot  = $ent.LibraryRoot
+                    SeriesFolder = $ent.SeriesFolder
+                    RuleId       = [string]$rule.Id
+                    UseOva       = $useOva
+                }
             }
         }
     }
     return $null
 }
 
+function Find-MediaLibraryFuzzyFlatHit {
+    param(
+        [string]$SourceFullPath,
+        [string]$Notes,
+        [object[]]$SeriesIndex,
+        $Layout
+    )
+    if ($null -eq $Layout -or -not $Layout.FuzzyEnabled) { return $null }
+    if ($null -eq $SeriesIndex -or $SeriesIndex.Count -eq 0) { return $null }
+    $base = [System.IO.Path]::GetFileNameWithoutExtension([System.IO.Path]::GetFileName($SourceFullPath))
+    $set = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($w in (Get-WordSet $base)) {
+        if ($w.Length -ge 4) { [void]$set.Add($w) }
+    }
+    foreach ($w in (Get-TmdbQueryTokenBag $Notes)) { [void]$set.Add($w) }
+    if ($set.Count -lt 2) { return $null }
+
+    $scored = [System.Collections.Generic.List[object]]::new()
+    foreach ($ent in $SeriesIndex) {
+        $fw = Get-WordSet $ent.SeriesFolder
+        $n = 0
+        foreach ($w in $set) {
+            if ($fw -contains $w) { $n++ }
+        }
+        if ($n -gt 0) {
+            [void]$scored.Add([pscustomobject]@{ N = $n; Ent = $ent })
+        }
+    }
+    if ($scored.Count -eq 0) { return $null }
+    $max = ($scored | Measure-Object -Property N -Maximum).Maximum
+    $tops = @($scored | Where-Object { $_.N -eq $max })
+    if ($tops.Count -ne 1) { return $null }
+    if ($max -lt [int]$Layout.FuzzyUniqueMinScore) { return $null }
+
+    $ent = $tops[0].Ent
+    $useOva = $false
+    if (-not [string]::IsNullOrWhiteSpace($Layout.AnimeSeriesScanRoot) -and
+        $ent.LibraryRoot -eq $Layout.AnimeSeriesScanRoot -and
+        (Test-MediaLibraryOvaFilename -FileBaseName $base -OvaRegex $Layout.OvaFilenameRegex)) {
+        $useOva = $true
+    }
+    return [pscustomobject]@{
+        LibraryRoot  = $ent.LibraryRoot
+        SeriesFolder = $ent.SeriesFolder
+        RuleId       = 'fuzzy_tokens'
+        UseOva       = $useOva
+    }
+}
+
 function Build-CartoonSeriesRootFlatDest {
     param(
-        [string]$CurrentDestFullPath,
-        [string]$SourceFullPath,
+        [string]$LibraryVideoRoot,
+        [string]$LibrarySubFolder,
         [string]$SeriesFolderName,
-        [string]$LeafFileName
+        [string]$LeafFileName,
+        [bool]$UseOva,
+        [string]$OvaSubfolderName
     )
-    $root = Get-VideoLibraryRootFromPath $CurrentDestFullPath
-    if ($null -eq $root) { $root = Get-VideoLibraryRootFromPath $SourceFullPath }
-    if ([string]::IsNullOrWhiteSpace($root)) { return $null }
-    return (Join-Path (Join-Path (Join-Path $root 'cartoons') $SeriesFolderName) $LeafFileName)
+    if ([string]::IsNullOrWhiteSpace($LibraryVideoRoot)) { return $null }
+    $p = Join-Path -Path $LibraryVideoRoot -ChildPath $LibrarySubFolder
+    $p = Join-Path -Path $p -ChildPath $SeriesFolderName
+    if ($UseOva -and -not [string]::IsNullOrWhiteSpace($OvaSubfolderName)) {
+        $p = Join-Path -Path $p -ChildPath $OvaSubfolderName
+    }
+    return (Join-Path -Path $p -ChildPath $LeafFileName)
 }
 
 function Build-CartoonDest {
@@ -317,10 +398,18 @@ function Build-CartoonDest {
         [string]$EpisodeTitle,
         [string]$Ext
     )
-    $root = Get-VideoLibraryRootFromPath $CurrentDestFullPath
-    if ($null -eq $root) { return $null }
+    $root = $script:MitLibraryRoot
+    if ([string]::IsNullOrWhiteSpace($root)) {
+        $root = Resolve-MediaLibraryVideoRoot -ExplicitRoot '' -PathHint $CurrentDestFullPath
+    }
+    if ([string]::IsNullOrWhiteSpace($root)) {
+        $root = Get-VideoLibraryRootFromPath $CurrentDestFullPath
+    }
+    if ([string]::IsNullOrWhiteSpace($root)) { return $null }
+    $sub = $script:MitMediaLayout.SeriesEpisodeDestinationDir
+    if ([string]::IsNullOrWhiteSpace($sub)) { $sub = 'cartoons' }
     $leaf = '{0} - S{1:D2}E{2:D2} - {3}.{4}' -f $SeriesName, $Season, $Episode, $EpisodeTitle, $Ext
-    return (Join-Path (Join-Path (Join-Path (Join-Path $root 'cartoons') $SeriesName) ("Season {0}" -f $Season)) $leaf)
+    return (Join-Path (Join-Path (Join-Path (Join-Path $root $sub) $SeriesName) ("Season {0}" -f $Season)) $leaf)
 }
 
 function Try-ApplyTorrentHintToReviewRow {
@@ -524,20 +613,17 @@ $skip = 0
 $review = 0
 $autoRepath = 0
 
-$cartoonSeriesDirNames = [string[]]@()
 $pathForLibRoot = [string]$($rows | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.DestFullPath) -and ([string]$_.DestFullPath -like '*\Video\*') } | Select-Object -First 1 -ExpandProperty DestFullPath)
 if ([string]::IsNullOrWhiteSpace($pathForLibRoot)) {
     $pathForLibRoot = [string]$($rows | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.SourceFullPath) -and ([string]$_.SourceFullPath -like '*\Video\*') } | Select-Object -First 1 -ExpandProperty SourceFullPath)
 }
-if (-not [string]::IsNullOrWhiteSpace($pathForLibRoot)) {
-    $vLib = Get-VideoLibraryRootFromPath $pathForLibRoot
-    if (-not [string]::IsNullOrWhiteSpace($vLib)) {
-        $cartoonsRoot = Join-Path $vLib 'cartoons'
-        if (Test-Path -LiteralPath $cartoonsRoot) {
-            $cartoonSeriesDirNames = @(Get-ChildItem -LiteralPath $cartoonsRoot -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })
-        }
-    }
+$mj = $MediaLibraryLayoutJson
+if ([string]::IsNullOrWhiteSpace($mj)) {
+    $mj = [Environment]::GetEnvironmentVariable('MIT_MEDIA_LIBRARY_JSON')
 }
+$script:MitMediaLayout = Read-MediaLibraryLayout $mj
+$script:MitLibraryRoot = Resolve-MediaLibraryVideoRoot -ExplicitRoot $MediaLibraryVideoRoot -PathHint $pathForLibRoot
+$script:MitSeriesIndex = @(Build-MediaLibrarySeriesIndex -LibraryVideoRoot $script:MitLibraryRoot -ScanRoots $script:MitMediaLayout.ScanRoots)
 
 $outRows = foreach ($r in $rows) {
     $src = [string]$r.SourceFullPath
@@ -649,16 +735,20 @@ $outRows = foreach ($r in $rows) {
             }
         }
 
-        if (($decision -ne 'APPLY') -and (-not $SkipCartoonSeriesRootFlat) -and ($null -eq $epi) -and ($cartoonSeriesDirNames.Count -gt 0)) {
-            $flatHit = Find-CartoonSeriesFolderForFlatSpecial -SourceFullPath $src -CartoonSeriesDirNames $cartoonSeriesDirNames
+        if (($decision -ne 'APPLY') -and (-not $SkipCartoonSeriesRootFlat) -and ($null -eq $epi) -and ($script:MitSeriesIndex.Count -gt 0) -and (-not [string]::IsNullOrWhiteSpace($script:MitLibraryRoot))) {
+            $flatHit = Find-MediaLibraryExplicitFlatHit -SourceFullPath $src -SeriesIndex $script:MitSeriesIndex -Layout $script:MitMediaLayout
+            if ($null -eq $flatHit) {
+                $flatHit = Find-MediaLibraryFuzzyFlatHit -SourceFullPath $src -Notes $notes -SeriesIndex $script:MitSeriesIndex -Layout $script:MitMediaLayout
+            }
             if ($null -ne $flatHit) {
                 $leafFn = [System.IO.Path]::GetFileName($src)
-                $flatDst = Build-CartoonSeriesRootFlatDest -CurrentDestFullPath $dst -SourceFullPath $src -SeriesFolderName $flatHit.FolderName -LeafFileName $leafFn
+                $flatDst = Build-CartoonSeriesRootFlatDest -LibraryVideoRoot $script:MitLibraryRoot -LibrarySubFolder $flatHit.LibraryRoot -SeriesFolderName $flatHit.SeriesFolder -LeafFileName $leafFn -UseOva $flatHit.UseOva -OvaSubfolderName $script:MitMediaLayout.OvaSubfolderName
                 if (-not [string]::IsNullOrWhiteSpace($flatDst)) {
                     $dst = $flatDst
                     $destRoot = 'cartoons'
                     $decision = 'APPLY'
-                    $decisionNote = "auto_series_root_flat:$($flatHit.RuleId)"
+                    $ovaSuf = if ($flatHit.UseOva) { '+ova' } else { '' }
+                    $decisionNote = "auto_series_root_flat:$($flatHit.RuleId)$ovaSuf"
                     $rule = 'cartoon_series_root_flat'
                     $autoRepath++
                 }
@@ -706,4 +796,5 @@ $topicTagged = @($torrentHints | Where-Object { -not [string]::IsNullOrWhiteSpac
 $leafIdx = $leafToHintIndexes.Count
 $qbitN = $qbitPathToHint.Count
 Write-Host "TorrentHints: $($torrentHints.Count)  (rutracker TopicId: $topicTagged)  videoLeafKeys: $leafIdx  qBitPathKeys: $qbitN"
-Write-Host "CartoonSeriesDirsOnLibrary: $($cartoonSeriesDirNames.Count)"
+$mitRootDisp = if ($script:MitLibraryRoot) { $script:MitLibraryRoot } else { '(null)' }
+Write-Host "MediaLibraryRoot: $mitRootDisp  SeriesIndexEntries: $($script:MitSeriesIndex.Count)"

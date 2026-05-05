@@ -1,5 +1,11 @@
 ﻿# CHANGELOG
 
+## 0.2.13 - 2026-05-05 22:00:00 +03:00
+- **`MediaLibraryLayout.ps1`** + **`media-library-layout.example.json`** — описание реальной библиотеки на NAS: корень `Video` (UNC или `MIT_VIDEO_LIBRARY_ROOT`), сканирование папок сериалов (`scanRoots`: Мультсериалы / Сериалы / Анимесериалы и т.д.), каталог для эпизодов с разбором `SxxEyy` (`seriesEpisodeDestinationDir`).
+- **`Update-MediaInboxReviewCsvAutoDecide.ps1`** — спецвыпуски без эпизода в имени: **явные правила** `explicitRules` (regex имени файла + папки на диске + `libraryRoot`); опционально **осторожный fuzzy** по токенам имени и полям `tmdb_tv_query` / `tmdb_movie_query` в `Notes` только при **единственном** кандидате с порогом `fuzzyUniqueMinScore` (`fuzzyEnabled` по умолчанию выкл.).
+- Для ветки **Анимесериалы**: при совпадении имени с `ovaFilenameRegex` (OVA/ONA/Спешл/Special и т.д.) назначение в подпапку **`ovaSubfolderName`** (например `OVA`) внутри каталога сериала.
+- Локальный конфиг: скопировать пример в **`media-library-layout.local.json`** (в `.gitignore`) или путь через **`-MediaLibraryLayoutJson`** / **`MIT_MEDIA_LIBRARY_JSON`**.
+
 ## 0.2.12 - 2026-05-06 04:00:00 +03:00
 - `Update-MediaInboxReviewCsvAutoDecide.ps1` — **спецвыпуски без номера серии в имени**: при пустом `Get-EpisodeInfo` и существующей папке сериала под `Video\\cartoons\\<имя>` файл назначается в **корень** этой папки (`auto_series_root_flat`, правило `cartoon_series_root_flat`). Первый набор правил: Robot Chicken / `Робоцып` (`Get-FlatSpecialLibraryRules`). Отключение: `-SkipCartoonSeriesRootFlat`.
 - Тот же скрипт — `Resolve-SeriesFromPath` допускает **сезон 0** (например S00); общий корень `Video\` через `Get-VideoLibraryRootFromPath`.
