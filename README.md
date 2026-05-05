@@ -110,7 +110,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Publish-
    - **`HumanDestOverride`** — полный путь файла назначения, если нужно не то, что в `DestFullPath`.
    - **`HumanComment`** — заметка для себя (на перенос не влияет).
    - Цвет заливки в Excel необязателен; достаточно колонок.
-6. `.\Invoke-MediaInboxApplyReviewedCsv.ps1 -CsvPath <ваш исправленный csv>` (с `-WhatIf` для проверки).
+6. `.\Invoke-MediaInboxApplyReviewedCsv.ps1 -CsvPath <ваш исправленный csv>` (с **`-WhatIf`** для проверки). Корень инбокса: **`-InboxRoot`** (по умолчанию `\\…\Video\Sort`). Цели в библиотеке (`\\…\Video\Мультсериалы`, `…\Фильмы` и т.д.) разрешены, если задан **`-MediaLibraryVideoRoot`**, переменная **`MIT_VIDEO_LIBRARY_ROOT`** или **`videoLibraryRoot`** в `media-library-layout.local.json`.
 
 ### Отдельно только HTML из любого CSV
 

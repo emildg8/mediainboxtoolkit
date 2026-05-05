@@ -15,12 +15,15 @@
     - HumanComment — для себя, на перенос не влияет
 
   Переносятся только строки, у которых эффективное решение = APPLY.
+
+  Источник должен лежать под **InboxRoot**. Назначение — под **InboxRoot** или под **MediaLibraryVideoRoot** (корень `Video` на NAS), чтобы разрешить перенос из Sort в библиотеку (`Мультсериалы`, `Фильмы` и т.д.).
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$CsvPath,
     [string]$InboxRoot = '\\Emilian_TNAS\emildg8\Video\Sort',
+    [string]$MediaLibraryVideoRoot = '',
     [switch]$WhatIf
 )
 
@@ -32,6 +35,22 @@ if (-not (Test-Path -LiteralPath $CsvPath)) { throw "CSV not found: $CsvPath" }
 if (-not (Test-Path -LiteralPath $InboxRoot)) { throw "InboxRoot not found: $InboxRoot" }
 
 $inboxNorm = $InboxRoot.TrimEnd('\')
+$libRootRaw = $MediaLibraryVideoRoot.Trim()
+if ([string]::IsNullOrWhiteSpace($libRootRaw)) {
+    $libRootRaw = [Environment]::GetEnvironmentVariable('MIT_VIDEO_LIBRARY_ROOT')
+}
+if ([string]::IsNullOrWhiteSpace($libRootRaw)) {
+    $layoutLocal = Join-Path $PSScriptRoot 'media-library-layout.local.json'
+    if (Test-Path -LiteralPath $layoutLocal) {
+        try {
+            $lj = Get-Content -LiteralPath $layoutLocal -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($null -ne $lj.videoLibraryRoot) { $libRootRaw = [string]$lj.videoLibraryRoot }
+        }
+        catch { }
+    }
+}
+$libNorm = if ([string]::IsNullOrWhiteSpace($libRootRaw)) { '' } else { $libRootRaw.TrimEnd('\') }
+
 $rows = @(Import-Csv -LiteralPath $CsvPath)
 if ($rows.Count -eq 0) {
     Write-Host "CSV has no rows: $CsvPath"
@@ -82,8 +101,12 @@ foreach ($r in $toApply) {
         continue
     }
 
-    # Safety: не трогаем файлы вне inbox
-    if (($src.TrimEnd('\') -notlike "$inboxNorm*") -or ($dst.TrimEnd('\') -notlike "$inboxNorm*")) {
+    # Safety: источник только из inbox; назначение — в inbox или под корнем библиотеки Video
+    $srcN = $src.TrimEnd('\')
+    $dstN = $dst.TrimEnd('\')
+    $srcOk = $srcN -like "$inboxNorm*"
+    $dstOk = ($dstN -like "$inboxNorm*") -or ((-not [string]::IsNullOrWhiteSpace($libNorm)) -and ($dstN -like "$libNorm*"))
+    if (-not $srcOk -or -not $dstOk) {
         $failed++
         $log.Add([pscustomobject]@{ Decision = 'APPLY'; Status = 'FAIL'; Source = $src; Dest = $dst; Error = 'path_outside_inbox' }) | Out-Null
         continue
@@ -120,6 +143,10 @@ $reportPath = Join-Path $logDir ("apply-reviewed-$stamp.csv")
 $log | Export-Csv -LiteralPath $reportPath -NoTypeInformation -Encoding UTF8
 
 Write-Host "Reviewed CSV: $CsvPath"
+Write-Host "InboxRoot: $inboxNorm"
+if (-not [string]::IsNullOrWhiteSpace($libNorm)) {
+    Write-Host "MediaLibraryVideoRoot: $libNorm"
+}
 Write-Host "APPLY rows: $($toApply.Count)  SKIP: $($skip.Count)  REVIEW/empty: $($review.Count)"
 Write-Host "Moved: $moved  Failed: $failed  WhatIf: $WhatIf"
 Write-Host "Report: $reportPath"

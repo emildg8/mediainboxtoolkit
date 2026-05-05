@@ -1,5 +1,8 @@
 ﻿# CHANGELOG
 
+## 0.2.17 - 2026-05-06 15:30:00 +03:00
+- **`Invoke-MediaInboxApplyReviewedCsv.ps1`** — назначение может лежать под **`MediaLibraryVideoRoot`** (корень `Video` на NAS: параметр **`-MediaLibraryVideoRoot`**, иначе `MIT_VIDEO_LIBRARY_ROOT`, иначе **`videoLibraryRoot`** из `media-library-layout.local.json`). Источник по-прежнему только под **`-InboxRoot`** (по умолчанию `…\Video\Sort`). Устраняет отказ `path_outside_inbox` при переносе из Sort в `Мультсериалы` / `Фильмы` и т.д.
+
 ## 0.2.16 - 2026-05-06 14:00:00 +03:00
 - **`New-MediaInboxReviewCsv.ps1`** — параметры **`-ApplyMinConfidence`** (по умолчанию 70) и **`-SeriesEpisodeStructuredMinConfidence`** (по умолчанию 55): для строк с `DestRootKey=series` и фрагментом ` - SxxEyy - ` в `DestFullPath` можно помечать **APPLY** при более низкой уверенности, не ослабляя порог для фильмов.
 - **`Update-MediaInboxReviewCsvAutoDecide.ps1`** — развязка «ничьей» между торрент-хинтами с одинаковым счётом слов: лист = имя файла, номер эпизода в именах файлов `.torrent`, rutracker id в пути; при двух кандидатах и близости **mit_dur_s** к **ffprobe** — предпочтение раздаче с одним видео-листом. Подключён **`MediaInboxFfprobe.ps1`**.
