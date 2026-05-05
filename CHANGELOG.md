@@ -1,5 +1,9 @@
 ﻿# CHANGELOG
 
+## 0.2.15 - 2026-05-06 12:00:00 +03:00
+- Корневой **`.gitignore`** — явная строка **`MediaInboxToolkit/media-library-layout.local.json`**, чтобы локальный UNC и правила библиотеки не попадали в коммиты.
+- Зафиксирован проверенный сценарий на реальном dry-run CSV (~4000 строк, `\\Emilian_TNAS\emildg8\Video\Sort`): **`New-MediaInboxReviewCsv.ps1`** → **`Update-MediaInboxReviewCsvAutoDecide.ps1`** с **`-TorrentDirectory`** (`%USERPROFILE%\Downloads`, сотни `.torrent`). При доступном NAS и **`media-library-layout.local.json`**: **`MediaLibraryRoot`** резолвится в `Video`, индекс сериалов (**`SeriesIndexEntries`**) в порядка **300** имён папок; доля **`REVIEW`** после автодоразметки **~128** строк (без торрентов было **~321**).
+
 ## 0.2.14 - 2026-05-05 23:30:00 +03:00
 - **`media-library-layout.*.json`** — опциональный ключ **`videoLibraryRoot`**: UNC до каталога `Video` (приоритет: `-MediaLibraryVideoRoot` → `MIT_VIDEO_LIBRARY_ROOT` → `videoLibraryRoot` в JSON → эвристика по пути CSV).
 - **`Update-MediaInboxReviewCsvAutoDecide.ps1`** — если рядом есть **`media-library-layout.local.json`**, он читается без параметров и без `MIT_MEDIA_LIBRARY_JSON`.
