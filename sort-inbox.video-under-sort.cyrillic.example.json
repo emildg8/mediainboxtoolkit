@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "description": "Обезличенный вариант: те же правила, что у sort-inbox.video-under-sort.example.json, но корни назначений под Sort\\Video — на кириллице (как типичная библиотека RU). Скопируйте в sort-inbox.*.local.json.",
+    "updatedAt": "2026-05-05",
+    "skeletonProfile": "cyrillic"
+  },
+  "nasShareRoot": "\\\\FILESERVER\\media",
+  "inboxRelative": "Video\\Sort",
+  "destinations": {
+    "series": "Video\\Sort\\Video\\Сериалы",
+    "cartoons": "Video\\Sort\\Video\\Мультсериалы",
+    "cartoonMovies": "Video\\Sort\\Video\\Мультики",
+    "movies": "Video\\Sort\\Video\\Фильмы",
+    "anime": "Video\\Sort\\Video\\Аниме",
+    "animeSeries": "Video\\Sort\\Video\\Анимесериалы",
+    "review": "Video\\Sort\\Video\\_НаРазбор"
+  },
+  "destinationsByKind": {
+    "series_episode": "series",
+    "series_related_movie": "movies",
+    "cartoon_series_episode": "cartoons",
+    "cartoon_movie": "cartoonMovies",
+    "cartoon_series_related_movie": "cartoonMovies",
+    "anime_series_episode": "animeSeries",
+    "anime_series_related": "animeSeries",
+    "anime_ova": "animeSeries",
+    "anime_movie": "anime",
+    "movie": "movies",
+    "unknown": "movies",
+    "bluray_remux": "movies"
+  },
+  "destinationsByKindMinConfidence": 40,
+  "tmdbKindRefinement": { "enabled": true },
+  "folders": {
+    "createDestinationRootsOnApply": true,
+    "skeletonProfile": "cyrillic",
+    "workspaceSeriesToolkitSubfolders": [ "Сериалы", "Мультсериалы", "Анимесериалы" ],
+    "skeletonExtraRelatives": [
+      "Video\\Sort\\Video\\Документалистика",
+      "Video\\Sort\\Video\\Концерты",
+      "Video\\Sort\\Video\\Спорт",
+      "Video\\Sort\\Video\\Стендап",
+      "Video\\Sort\\Video\\Детское",
+      "Video\\Sort\\Video\\Реалити",
+      "Video\\Sort\\Video\\Клипы",
+      "Video\\Sort\\Video\\_Промежуточное",
+      "Video\\Sort\\Video\\_Дополнения"
+    ]
+  },
+  "classification": {
+    "folderSeasonContext": {
+      "enabled": true,
+      "orphanSeasonFolderSeriesMap": [
+        { "folderMatch": "3 season", "seriesGuess": "King of the Hill" }
+      ]
+    },
+    "tvSpecialFilenameBoost": { "enabled": true },
+    "movies": { "allowMissingYearIfTmdbMatched": true },
+    "webTmdbResolve": { "enabled": true },
+    "featureMeter": { "minSecondsForFullFeature": 3600 }
+  },
+  "scope": {
+    "videoOnly": true,
+    "excludeDirectoryNames": [ "Video", "_Workspace" ]
+  },
+  "safety": {
+    "requireSourceUnderInbox": true,
+    "skipSourceIfUnderLibrary": true,
+    "libraryRootRelatives": [
+      "Video\\Сериалы",
+      "Video\\Мультсериалы",
+      "Video\\Мультики",
+      "Video\\Фильмы",
+      "Video\\Аниме",
+      "Video\\Анимесериалы"
+    ]
+  },
+  "preferCartoonsSubfolder": false,
+  "displayNames": { "tmdbLanguage": "ru-RU", "preferCyrillic": true },
+  "episodeTitleFallback": "Серия {0}",
+  "blurayRemux": { "enabled": true },
+  "seasonFolderFormat": "Сезон {0}",
+  "videoExtensions": [ "mkv", "mp4", "avi", "m4v", "mov", "wmv", "webm", "mpeg", "mpg" ],
+  "filenameTemplates": {
+    "series": "{Series} - S{Season:D2}E{Episode:D2} - {Title}.{Ext}",
+    "movie": "{Title}.{Ext}"
+  }
+}

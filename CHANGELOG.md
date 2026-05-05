@@ -1,5 +1,16 @@
 ﻿# CHANGELOG
 
+## 0.2.8 - 2026-05-05 20:00:00 +03:00
+- `TorrentBencode.ps1` — разбор `.torrent` (bencode): `info` SHA1, имена видеофайлов из раздачи; исправлен `path` как одна строка (не только список сегментов).
+- `Update-MediaInboxReviewCsvAutoDecide.ps1` — слова для fuzzy из метаданных раздачи; **уникальное** совпадение имени видеофайла с одной раздачей → `auto_from_rutracker_leaf` / `auto_from_torrent_leaf_unique`; опционально **qBittorrent Web API** (`-QbittorrentWebUiUrl`, учётные данные или `MIT_QBIT_WEBUI` / `MIT_QBIT_USER` / `MIT_QBIT_PASS`, `-QbittorrentSkipCertificateCheck` для локального HTTPS).
+- `Qbittorrent-WebApi.ps1` — логин и индекс полных путей файлов по `info_hash`, сопоставляемому с локальными `.torrent`.
+- `README.md` — параметры qBit и переменные окружения.
+- Пояснение в `.cursor/rules/media-inbox-toolkit.mdc`: когда `Bump-Version.ps1` не дописывает CHANGELOG.
+
+## 0.2.7 - 2026-05-05 12:00:00 +03:00
+- `Update-MediaInboxReviewCsvAutoDecide.ps1` — сопоставление по **одинаковому Rutracker topic id** в пути источника и в имени `.torrent` (`rutracker-NNNNNNN`), до fuzzy; в логе решения `auto_from_rutracker_topic`, правило `tracker_topic_repath_apply`.
+- Тот же скрипт — доп. паттерн пути для «Adventure Time with Finn and Jake … Season N».
+- `README.md` — кратко: зачем id из пути/торрента и почему не парсим профиль Rutracker по URL.
 
 
 
@@ -10,6 +21,50 @@
 
 
 
+## 0.2.6 - 2026-05-06 00:53:59 +03:00
+- `Export-MediaInboxReviewHtml.ps1` — цветной HTML-отчёт (REVIEW / APPLY / SKIP отдельными таблицами).
+- `Prepare-MediaInboxReviewForHuman.ps1` — `*.for-human.csv` с колонками `HumanOverride` / `HumanComment` / `HumanDestOverride` + автогенерация HTML.
+- `Invoke-MediaInboxApplyReviewedCsv.ps1` — учёт `HumanOverride` и `HumanDestOverride` при переносе.
+- `New-MediaInboxReviewCsv.ps1` / `Update-MediaInboxReviewCsvAutoDecide.ps1` — сохранение и проброс Human-колонок.
+- `README.md` — пошаговый «человеческий» конвейер проверки.
+- Snapshot: OLD/MediaInboxToolkit_v0.2.5_20260506-005359 (launcher MediaInboxToolkit.ps1).
+
+## 0.2.5 - 2026-05-05 18:52:07 +03:00
+- CSV auto-decision: torrent hints + _Workspace exclusion for sort-inbox.video-under-sort policies
+- Snapshot: OLD/MediaInboxToolkit_v0.2.4_20260505-185207 (launcher MediaInboxToolkit.ps1).
+
+## 0.2.4 - 2026-05-05 18:12:52 +03:00
+- `Toolkits/README.md` + `Toolkits/SeriesToolkit/README.md` — каркас новой иерархии, где `MediaInboxToolkit` выступает основной оболочкой, а `SeriesToolkit` отмечен как legacy-slot для поэтапного переноса.
+- `Toolkits/VideoMetaToolkit/README.md` + `Toolkits/VideoMetaToolkit/VideoMetaToolkit.ps1` — отдельная подпапка и launcher-заготовка под новый модуль описаний/постеров/актёров.
+- `REPO-LAYOUT.md` и `MediaInboxToolkit/README.md` — добавлен раздел про архитектуру vNext и правила постепенной миграции без поломки текущих путей.
+- `MediaInboxToolkit.ps1` — заметка в `.NOTES` про новый каркас `Toolkits`.
+- `Invoke-MediaInboxApplyReviewedCsv.ps1` + `Get-MediaInboxReviewedCsvSummary.ps1` — workflow ручной разметки CSV (`Decision=APPLY/SKIP/REVIEW`) и перенос только подтверждённых строк.
+- `New-MediaInboxReviewCsv.ps1` — подготовка review-копии CSV с колонками `Decision`/`DecisionNote` и дефолтной предразметкой.
+- `Update-MediaInboxReviewCsvAutoDecide.ps1` — расширен: поддержка `-TorrentDirectory`, fuzzy match по именам `.torrent`, доп. автоперенаправление review-эпизодов в `cartoons`.
+- `sort-inbox.video-under-sort*.example.json` — в `scope.excludeDirectoryNames` добавлен `_Workspace`, чтобы не тянуть legacy-шум в новые dryrun.
+- Snapshot: OLD/MediaInboxToolkit_v0.2.3_20260505-181252 (launcher MediaInboxToolkit.ps1).
+
+## 0.2.3 - 2026-05-05 02:38:26 +03:00
+- `sort-inbox.video-under-sort.cyrillic.example.json` — обезличенный пресет с кириллическими корнями под `Video\Sort\Video\…`, `folders.workspaceSeriesToolkitSubfolders` для SeriesToolkit.
+- `sort-inbox.video-under-sort.example.json` — расширенный скелет: `folders.skeletonExtraRelatives` (документалистика, концерты, спорт и др.) + `workspaceSeriesToolkitSubfolders`.
+- `New-MediaInboxDestinationSkeleton.ps1` — создаёт также `skeletonExtraRelatives`; параметр `-SkipSkeletonExtras` отключает доп. каталоги.
+- `Organize-SortVideoUnderSort.ps1` — подпапки для batch SeriesToolkit из политики (`workspaceSeriesToolkitSubfolders`).
+- `Start-MediaInboxToolkitGui.Engine.ps1` — пресет политики (ASCII / кириллица / нейтральный) и кнопка создания скелета.
+- `Watch-MediaInboxToolkitCsv.ps1` — ожидание нового `sort-inbox-*.csv` в `LOGS\`.
+- `Invoke-MediaInboxSortStage1.ps1` / `Invoke-MediaInboxSortStage3Apply.ps1` — параметр `-SkeletonProfile Cyrillic|Ascii`.
+- `sort-inbox.example.json` — в `meta` и `folders` задокументированы опциональные ключи скелета.
+- `README.md` — описание кириллического скелета и Watch.
+- Snapshot: OLD/MediaInboxToolkit_v0.2.2_20260505-023826 (launcher MediaInboxToolkit.ps1).
+
+## 0.2.2 - 2026-05-05 02:20:55 +03:00
+- `sort-inbox.video-under-sort.example.json` — разложение внутри `Video\Sort\Video\…`, `scope.excludeDirectoryNames: ["Video"]`, те же `destinationsByKind`, что у workspace-in-sort.
+- `New-MediaInboxDestinationSkeleton.ps1` — только создание корней из `destinations` (без движка и без переноса).
+- `Invoke-MediaInboxSortStage1.ps1` — этап 1: скелет + `MediaInboxToolkit` DryRun на `SortRoot`.
+- `Invoke-MediaInboxSortStage3Apply.ps1` — только `MediaInboxToolkit -Apply` (перенос по политике); SeriesToolkit — через `Organize-SortVideoUnderSort.ps1`.
+- `Organize-SortVideoUnderSort.ps1` — аналог `Organize-SortInPlace.ps1`, корень сериалов `Sort\Video\…` и политика по умолчанию `sort-inbox.video-under-sort.example.json`.
+- `README.md`: ссылки на новые сценарии; корень `.gitignore`: `MediaInboxToolkit/sort-inbox.*.local.json` для локальных путей NAS.
+- `MediaInboxToolkit.ps1`: уточнение в `.NOTES` про exclude для `Video`.
+- Snapshot: OLD/MediaInboxToolkit_v0.2.1_20260505-022055 (launcher MediaInboxToolkit.ps1).
 
 ## 0.2.1 - 2026-05-04 18:42:21 +03:00
 - `.github/workflows/release.yml` — при push тега `v*.*.*` сборка ZIP (без `.git` / `.github` / `OLD` / `LOGS`) и публикация Release через `softprops/action-gh-release`; `zip_path` в `GITHUB_OUTPUT` (глоб `*.zip` на Linux не подхватывался); `draft: false`.

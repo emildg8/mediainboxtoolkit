@@ -5,10 +5,13 @@
 .NOTES
   Двухшаговый сценарий: MediaInboxToolkit.Orchestrate.ps1. GUI: Start-MediaInboxToolkitGui.ps1.
   Политика: classification.folderSeasonContext.orphanSeasonFolderSeriesMap для одиночной папки сезона.
-  scope.excludeDirectoryNames — не сканировать вложенные каталоги (например _Workspace при разложении внутри Sort).
+  scope.excludeDirectoryNames — не сканировать вложенные каталоги (_Workspace или Video под Sort — см. sort-inbox.*.example.json).
   План доработок классификации: docs/FIX-PLAN-SORT-CLASSIFICATION-202605.md; постеры/NFO: ../SeriesMetaExtrasToolkit/.
   classification: webTmdbResolve (DDG/Яндекс→TMDB id), featureMeter (ffprobe порог полного метра, по умолчанию 3600 с).
   shortFormEpisodeTitleGuess: короткие файлы без SxxEyy — поиск эпизода по названию в TMDB (Fetch: Find-TmdbTvEpisodeByTitleFuzzy).
+  Политика folders.skeletonExtraRelatives + New-MediaInboxDestinationSkeleton.ps1; кириллический скелет: sort-inbox.video-under-sort.cyrillic.example.json.
+  Каркас продуктов: Toolkits/SeriesToolkit и Toolkits/VideoMetaToolkit (поэтапная интеграция).
+  CSV workflow: New-MediaInboxReviewCsv, Update-MediaInboxReviewCsvAutoDecide, Prepare-MediaInboxReviewForHuman, Export-MediaInboxReviewHtml, Invoke-MediaInboxApplyReviewedCsv.
   Релизы GitHub: workflow по тегу v*; Publish-MediaInboxStandalone.ps1 пушит тег после main.
 #>
 [CmdletBinding()]

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "meta": {
-    "description": "Нейтральный шаблон: замените nasShareRoot и относительные пути. Персональный пример см. sort-inbox.library-layout-emilian.example.json.",
-    "updatedAt": "2026-05-04"
+    "description": "Нейтральный шаблон: замените nasShareRoot и относительные пути. Персональный пример: sort-inbox.library-layout-emilian.example.json. Скелет внутри Sort: sort-inbox.video-under-sort*.example.json. Опционально в folders: skeletonProfile (ascii|cyrillic, метка), skeletonExtraRelatives [] — относительно nasShareRoot для New-MediaInboxDestinationSkeleton.ps1; workspaceSeriesToolkitSubfolders [] — подпапки под Sort\\Video для Organize-SortVideoUnderSort.ps1.",
+    "updatedAt": "2026-05-05"
   },
   "nasShareRoot": "\\\\FILESERVER\\media",
   "inboxRelative": "Video\\Sort",
@@ -34,7 +34,9 @@
     "enabled": true
   },
   "folders": {
-    "createDestinationRootsOnApply": true
+    "createDestinationRootsOnApply": true,
+    "skeletonProfile": "neutral",
+    "skeletonExtraRelatives": []
   },
   "classification": {
     "folderSeasonContext": {

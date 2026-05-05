@@ -70,6 +70,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Publish-
 - [docs/INSPIRATION-SERIESTOOLKIT.md](docs/INSPIRATION-SERIESTOOLKIT.md) — что перенимаем из SeriesToolkit.
 - [docs/GUI-EXE-ROADMAP.md](docs/GUI-EXE-ROADMAP.md) — GUI и сборка EXE.
 
+## Архитектура vNext (каркас)
+
+`MediaInboxToolkit` теперь содержит каркас `Toolkits/`:
+
+- `Toolkits/SeriesToolkit/` — legacy-слот для поэтапной интеграции существующего SeriesToolkit;
+- `Toolkits/VideoMetaToolkit/` — отдельный слот под новый модуль описаний/постеров/актёров (`VideoMetaToolkit.ps1` — заготовка launcher).
+
+Текущие рабочие скрипты пока остаются на прежних путях; перенос кода выполняется постепенно.
+
 ## Версии и журнал
 
 - `version.json`, `CHANGELOG.md`, `Bump-Version.ps1` — как в SeriesToolkit.
@@ -80,3 +89,31 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Publish-
 По умолчанию `.\LOGS\` (каталог в `.gitignore`). Для полного текстового транскрипта прогона (включая ошибки TMDB в консоли) и блока **POST-RUN SUMMARY** в конце файла: `.\Run-DryRunTranscript-Example.ps1` (параметры `-InboxPath` / `-PolicyPath` при необходимости).
 
 **Разложение только внутри Sort** (подкаталог `Sort\_Workspace\…`, затем SeriesToolkit по сериалам): `.\Organize-SortInPlace.ps1` и политика `sort-inbox.workspace-inside-sort.json` (`scope.excludeDirectoryNames`: `_Workspace`). Под `_Workspace` в политике используются **ASCII**-имена (`series`, `movies`, …), чтобы лаунчер не ломался на кодировке консоли; русские имена шоу/эпизодов задаёт TMDB.
+
+**Тот же сценарий, но папка `Video` вместо `_Workspace`:** политика `sort-inbox.video-under-sort.example.json` (исключение сканирования: `Video`). В `folders` заданы `skeletonProfile: ascii`, `workspaceSeriesToolkitSubfolders` и **`skeletonExtraRelatives`** — дополнительные пустые каталоги (документалистика, концерты и т.д.); их создаёт **`.\New-MediaInboxDestinationSkeleton.ps1`** (движок сортировки их не использует, пока не добавите ключи в `destinations` / `destinationsByKind`). **Кириллический обезличенный вариант** тех же правил: `sort-inbox.video-under-sort.cyrillic.example.json` (`nasShareRoot` в примере нейтральный — скопируйте в `sort-inbox.*.local.json` и пропишите свой UNC). Этап «скелет + DryRun»: `.\Invoke-MediaInboxSortStage1.ps1` или `-SkeletonProfile Cyrillic`; ожидание нового CSV после долгого DryRun: `.\Watch-MediaInboxToolkitCsv.ps1`. Перенос: `.\Invoke-MediaInboxSortStage3Apply.ps1` (введите `YES`; `-Force` без паузы). Полный in-place + SeriesToolkit: `.\Organize-SortVideoUnderSort.ps1` (имена подпапок под `Sort\Video` берутся из политики). GUI: пресет политики + кнопка «Создать скелет». Локальные пути — `sort-inbox.<имя>.local.json` (в `.gitignore`).
+
+## Ручная валидация CSV перед переносом
+
+### Быстрый конвейер
+
+1. DryRun → `sort-inbox-*.csv`
+2. `.\New-MediaInboxReviewCsv.ps1 -CsvPath <csv>` → `*.review.csv` (колонки `HumanOverride` / `HumanComment` / `HumanDestOverride` уже пустые)
+3. `.\Update-MediaInboxReviewCsvAutoDecide.ps1 -CsvPath <review.csv> -TorrentDirectory "C:\Users\<user>\Downloads"` → `*.auto.csv`  
+   Логика торрентов: совпадение `rutracker-…` в **пути** и в **имени `.torrent`**; разбор **метаданных `.torrent`** (имена файлов внутри раздачи) — если имя видеофайла в CSV встречается **ровно в одной** локальной раздаче, применяется эта раздача (в т.ч. номер темы из имени `.torrent`, без id в пути).  
+   Опционально **qBittorrent Web UI** (если путь к файлу на диске совпадает с тем, что знает клиент): тот же базовый URL, что в браузере, **без** завершающего слэша, например `https://хост:порт/qbittorrent`. Учётные данные: параметры `-QbittorrentUsername` / `-QbittorrentPassword` или переменные окружения `MIT_QBIT_WEBUI`, `MIT_QBIT_USER`, `MIT_QBIT_PASS`; при самоподписанном HTTPS: `-QbittorrentSkipCertificateCheck`. У других пользователей клиент не обязателен — достаточно папки с `.torrent`. Парсить профиль Rutracker по URL не нужно.
+4. **`.\Prepare-MediaInboxReviewForHuman.ps1 -CsvPath <*.auto.csv>`** → **`*.for-human.csv` + `*.for-human.html`**  
+   Откройте HTML в браузере: цветные блоки **REVIEW** (жёлтый) / **APPLY** (зелёный) / **SKIP** (серый), таблицы по разделам.
+5. Правки в **`*.for-human.csv`** (Excel / LibreOffice):
+   - **`HumanOverride`** — пусто = брать `Decision`; иначе **`APPLY`**, **`SKIP`**, **`REVIEW`** (перекрывает `Decision` при переносе).
+   - **`HumanDestOverride`** — полный путь файла назначения, если нужно не то, что в `DestFullPath`.
+   - **`HumanComment`** — заметка для себя (на перенос не влияет).
+   - Цвет заливки в Excel необязателен; достаточно колонок.
+6. `.\Invoke-MediaInboxApplyReviewedCsv.ps1 -CsvPath <ваш исправленный csv>` (с `-WhatIf` для проверки).
+
+### Отдельно только HTML из любого CSV
+
+`.\Export-MediaInboxReviewHtml.ps1 -CsvPath <csv>`
+
+### Сводка цифр
+
+`.\Get-MediaInboxReviewedCsvSummary.ps1 -CsvPath <csv>`
