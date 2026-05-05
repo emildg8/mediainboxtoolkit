@@ -3,6 +3,18 @@
 
 Set-StrictMode -Version Latest
 
+function Get-QbitObjectString {
+    param(
+        $Object,
+        [string]$PropertyName,
+        [string]$Default = ''
+    )
+    if ($null -eq $Object) { return $Default }
+    $p = $Object.PSObject.Properties[$PropertyName]
+    if ($null -eq $p) { return $Default }
+    return [string]$p.Value
+}
+
 function Initialize-MediaInboxQbitTlsBypass {
     if (-not ([System.Management.Automation.PSTypeName]'MediaInboxTrustAllCerts' -as [type])) {
         $def = @'
@@ -46,14 +58,32 @@ function Connect-MediaInboxQbitWebApi {
         Initialize-MediaInboxQbitTlsBypass
     }
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+    # Если в qBittorrent отключена аутентификация Web UI, /auth/login не нужен — достаточно сессии.
+    $probeUrl = "$base/api/v2/app/webapiVersion"
+    try {
+        $probe = Invoke-WebRequest -Uri $probeUrl -WebSession $session -UseBasicParsing -TimeoutSec 25
+        if ($probe.StatusCode -eq 200) {
+            return [pscustomobject]@{
+                BaseUrl = $base
+                Session = $session
+            }
+        }
+    } catch {
+        # Требуется логин или другая ошибка — пробуем auth/login.
+    }
+
     $loginUrl = "$base/api/v2/auth/login"
     $pair = 'username={0}&password={1}' -f (
         [System.Uri]::EscapeDataString($Username),
         [System.Uri]::EscapeDataString($Password)
     )
-    $resp = Invoke-WebRequest -Uri $loginUrl -Method Post -Body $pair -WebSession $session -UseBasicParsing -TimeoutSec 45
+    $resp = Invoke-WebRequest -Uri $loginUrl -Method Post -Body $pair -WebSession $session -UseBasicParsing -TimeoutSec 45 -ContentType 'application/x-www-form-urlencoded'
     if ($resp.StatusCode -ne 200) {
         throw "qBittorrent auth HTTP $($resp.StatusCode)"
+    }
+    $body = [string]$resp.Content
+    if ($body -eq 'Fails.') {
+        throw 'qBittorrent auth/login returned Fails. (wrong user/password or Web UI API disabled).'
     }
     return [pscustomobject]@{
         BaseUrl = $base
@@ -96,16 +126,16 @@ function Build-MediaInboxQbitFullPathIndex {
     $map = @{}
     $rows = Get-MediaInboxQbitTorrentsRaw -Connection $Connection
     foreach ($t in $rows) {
-        $h = [string]$t.hash
+        $h = Get-QbitObjectString $t 'hash'
         if ([string]::IsNullOrWhiteSpace($h)) { continue }
         if (-not $InfoSha1HexToHintIndex.ContainsKey($h)) { continue }
         $hintIx = $InfoSha1HexToHintIndex[$h]
-        $save = [string]$t.save_path
+        $save = Get-QbitObjectString $t 'save_path'
         if ([string]::IsNullOrWhiteSpace($save)) { continue }
 
         $files = Get-MediaInboxQbitTorrentFilesRaw -Connection $Connection -Hash $h
         foreach ($f in $files) {
-            $rel = [string]$f.name -replace '/', [System.IO.Path]::DirectorySeparatorChar
+            $rel = (Get-QbitObjectString $f 'name') -replace '/', [System.IO.Path]::DirectorySeparatorChar
             if ([string]::IsNullOrWhiteSpace($rel)) { continue }
             try {
                 $full = [System.IO.Path]::GetFullPath((Join-Path -Path $save -ChildPath $rel))
@@ -118,7 +148,7 @@ function Build-MediaInboxQbitFullPathIndex {
             }
         }
 
-        $cp = [string]$t.content_path
+        $cp = Get-QbitObjectString $t 'content_path'
         if (-not [string]::IsNullOrWhiteSpace($cp)) {
             try {
                 $fullCp = [System.IO.Path]::GetFullPath($cp)

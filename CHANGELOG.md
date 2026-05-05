@@ -1,5 +1,9 @@
 ﻿# CHANGELOG
 
+## 0.2.9 - 2026-05-05 22:30:00 +03:00
+- `Qbittorrent-WebApi.ps1` — если Web UI **без пароля**: сначала запрос `app/webapiVersion`, без `auth/login`; безопасный доступ к полям (`content_path` и др. могут отсутствовать в старых API / при StrictMode).
+- Проверка ответа `auth/login`: тело `Fails.` считается ошибкой.
+
 ## 0.2.8 - 2026-05-05 20:00:00 +03:00
 - `TorrentBencode.ps1` — разбор `.torrent` (bencode): `info` SHA1, имена видеофайлов из раздачи; исправлен `path` как одна строка (не только список сегментов).
 - `Update-MediaInboxReviewCsvAutoDecide.ps1` — слова для fuzzy из метаданных раздачи; **уникальное** совпадение имени видеофайла с одной раздачей → `auto_from_rutracker_leaf` / `auto_from_torrent_leaf_unique`; опционально **qBittorrent Web API** (`-QbittorrentWebUiUrl`, учётные данные или `MIT_QBIT_WEBUI` / `MIT_QBIT_USER` / `MIT_QBIT_PASS`, `-QbittorrentSkipCertificateCheck` для локального HTTPS).
