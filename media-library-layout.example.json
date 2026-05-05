@@ -1,4 +1,5 @@
 {
+  "videoLibraryRoot": "",
   "seriesEpisodeDestinationDir": "Мультсериалы",
   "scanRoots": ["Мультсериалы", "Сериалы", "Анимесериалы"],
   "animeSeriesScanRoot": "Анимесериалы",

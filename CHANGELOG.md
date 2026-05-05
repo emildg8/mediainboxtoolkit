@@ -1,5 +1,9 @@
 ﻿# CHANGELOG
 
+## 0.2.14 - 2026-05-05 23:30:00 +03:00
+- **`media-library-layout.*.json`** — опциональный ключ **`videoLibraryRoot`**: UNC до каталога `Video` (приоритет: `-MediaLibraryVideoRoot` → `MIT_VIDEO_LIBRARY_ROOT` → `videoLibraryRoot` в JSON → эвристика по пути CSV).
+- **`Update-MediaInboxReviewCsvAutoDecide.ps1`** — если рядом есть **`media-library-layout.local.json`**, он читается без параметров и без `MIT_MEDIA_LIBRARY_JSON`.
+
 ## 0.2.13 - 2026-05-05 22:00:00 +03:00
 - **`MediaLibraryLayout.ps1`** + **`media-library-layout.example.json`** — описание реальной библиотеки на NAS: корень `Video` (UNC или `MIT_VIDEO_LIBRARY_ROOT`), сканирование папок сериалов (`scanRoots`: Мультсериалы / Сериалы / Анимесериалы и т.д.), каталог для эпизодов с разбором `SxxEyy` (`seriesEpisodeDestinationDir`).
 - **`Update-MediaInboxReviewCsvAutoDecide.ps1`** — спецвыпуски без эпизода в имени: **явные правила** `explicitRules` (regex имени файла + папки на диске + `libraryRoot`); опционально **осторожный fuzzy** по токенам имени и полям `tmdb_tv_query` / `tmdb_movie_query` в `Notes` только при **единственном** кандидате с порогом `fuzzyUniqueMinScore` (`fuzzyEnabled` по умолчанию выкл.).

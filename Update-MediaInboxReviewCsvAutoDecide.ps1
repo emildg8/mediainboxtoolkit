@@ -13,7 +13,7 @@
   - метаданные .torrent (bencode): слова из info.name и имён видеофайлов в раздаче; уникальное совпадение имени листа .mkv/.mp4/... с одной раздачей
   - опционально qBittorrent Web API: полный путь файла на диске клиента -> та же раздача (по info_hash), без хардкода URL (параметры или MIT_QBIT_*)
   - если файлы перенесли с каталога загрузок qBittorrent на NAS: префиксы -QbittorrentCsvSourcePrefix и -QbittorrentDownloadRootPrefix подставляют путь «как у клиента» для поиска в индексе
-  - спецвыпуски без SxxEyy: папки сериалов ищутся под реальным корнем NAS (\\…\\Video\\Мультсериалы и т.д.), см. media-library-layout.example.json; для Анимесериалов при OVA/ONA в имени — подпапка OVA
+  - спецвыпуски без SxxEyy: папки сериалов под корнем из videoLibraryRoot в JSON / MIT_VIDEO_LIBRARY_ROOT / эвристике; при наличии рядом media-library-layout.local.json — читается автоматически; для Анимесериалов при OVA/ONA в имени — подпапка OVA
 #>
 [CmdletBinding()]
 param(
@@ -621,8 +621,14 @@ $mj = $MediaLibraryLayoutJson
 if ([string]::IsNullOrWhiteSpace($mj)) {
     $mj = [Environment]::GetEnvironmentVariable('MIT_MEDIA_LIBRARY_JSON')
 }
+if ([string]::IsNullOrWhiteSpace($mj)) {
+    $defaultLocalLayout = Join-Path $PSScriptRoot 'media-library-layout.local.json'
+    if (Test-Path -LiteralPath $defaultLocalLayout) {
+        $mj = $defaultLocalLayout
+    }
+}
 $script:MitMediaLayout = Read-MediaLibraryLayout $mj
-$script:MitLibraryRoot = Resolve-MediaLibraryVideoRoot -ExplicitRoot $MediaLibraryVideoRoot -PathHint $pathForLibRoot
+$script:MitLibraryRoot = Resolve-MediaLibraryVideoRoot -ExplicitRoot $MediaLibraryVideoRoot -PathHint $pathForLibRoot -LayoutRoot ([string]$script:MitMediaLayout.VideoLibraryRoot)
 $script:MitSeriesIndex = @(Build-MediaLibrarySeriesIndex -LibraryVideoRoot $script:MitLibraryRoot -ScanRoots $script:MitMediaLayout.ScanRoots)
 
 $outRows = foreach ($r in $rows) {

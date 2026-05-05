@@ -5,6 +5,7 @@ Set-StrictMode -Version Latest
 
 function Get-DefaultMediaLibraryLayout {
     return [pscustomobject]@{
+        VideoLibraryRoot              = ''
         SeriesEpisodeDestinationDir = 'cartoons'
         ScanRoots                   = @('cartoons')
         AnimeSeriesScanRoot         = ''
@@ -51,7 +52,13 @@ function ConvertTo-MediaLibraryLayoutObject {
         $scan = @($def.ScanRoots)
     }
 
+    $vroot = ''
+    if ($null -ne $JsonObj.videoLibraryRoot -and -not [string]::IsNullOrWhiteSpace([string]$JsonObj.videoLibraryRoot)) {
+        $vroot = [string]$JsonObj.videoLibraryRoot
+    }
+
     return [pscustomobject]@{
+        VideoLibraryRoot              = $vroot
         SeriesEpisodeDestinationDir = if ($JsonObj.seriesEpisodeDestinationDir) { [string]$JsonObj.seriesEpisodeDestinationDir } else { $def.SeriesEpisodeDestinationDir }
         ScanRoots                   = $scan
         AnimeSeriesScanRoot         = if ($JsonObj.animeSeriesScanRoot) { [string]$JsonObj.animeSeriesScanRoot } else { [string]$def.AnimeSeriesScanRoot }
@@ -76,7 +83,8 @@ function Read-MediaLibraryLayout {
 function Resolve-MediaLibraryVideoRoot {
     param(
         [string]$ExplicitRoot,
-        [string]$PathHint
+        [string]$PathHint,
+        [string]$LayoutRoot = ''
     )
     if (-not [string]::IsNullOrWhiteSpace($ExplicitRoot)) {
         return $ExplicitRoot.TrimEnd('\')
@@ -84,6 +92,9 @@ function Resolve-MediaLibraryVideoRoot {
     $envR = [Environment]::GetEnvironmentVariable('MIT_VIDEO_LIBRARY_ROOT')
     if (-not [string]::IsNullOrWhiteSpace($envR)) {
         return $envR.TrimEnd('\')
+    }
+    if (-not [string]::IsNullOrWhiteSpace($LayoutRoot)) {
+        return $LayoutRoot.TrimEnd('\')
     }
     if (-not [string]::IsNullOrWhiteSpace($PathHint)) {
         $m = [regex]::Match($PathHint, '^(?<lr>.+\\Video)\\Sort\\Video\\', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
