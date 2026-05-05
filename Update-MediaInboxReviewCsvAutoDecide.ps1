@@ -7,7 +7,7 @@
   - source under \_Workspace\ => SKIP (legacy noise)
   - rows with tmdb_movie/tmdb_tv note and non-review destination => APPLY
   - rows with episode_code_in_filename and non-review destination => APPLY
-  - review rows: source-pattern series detection + episode parse => APPLY to cartoons
+  - review rows: source-pattern series detection + episode parse => APPLY to cartoons (эпизод: S01E02, S01.E02, _S01E02_, последний SxxEyy в имени, 7xx «сезон+эпизод», Eps21-22, «… 3 (12)», ведущий номер)
   - optional torrent hints: fuzzy token match from .torrent names => APPLY for review rows
   - если в пути источника и в имени .torrent есть один и тот же rutracker-ID (rutracker-1234567) — жёсткое сопоставление без fuzzy
   - метаданные .torrent (bencode): слова из info.name и имён видеофайлов в раздаче; уникальное совпадение имени листа .mkv/.mp4/... с одной раздачей
@@ -84,17 +84,94 @@ function Get-EpisodeInfo {
     param([string]$FileName)
     $base = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
 
+    function New-EpisodeInfoResult {
+        param(
+            [int]$Episode,
+            [string]$Title,
+            [int]$Season = 0,
+            [string]$Series = ''
+        )
+        $t = $Title.Trim()
+        if ([string]::IsNullOrWhiteSpace($t)) { $t = "Episode $Episode" }
+        return [pscustomobject]@{
+            Episode = $Episode
+            Title     = $t
+            Season    = $Season
+            Series    = $Series
+        }
+    }
+
+    $mCode = $null
+
     $mCode = [regex]::Match($base, '(?i)\bS(?<s>\d{1,2})E(?<ep>\d{1,3})\b')
     if (-not $mCode.Success) {
         $mCode = [regex]::Match($base, '(?i)\b(?<s>\d{1,2})x(?<ep>\d{1,3})\b')
     }
+    if (-not $mCode.Success) {
+        $mCode = [regex]::Match($base, '(?i)(?<![A-Za-z0-9])S(?<s>\d{1,2})\.E(?<ep>\d{1,3})(?![0-9])')
+    }
+    if (-not $mCode.Success) {
+        $mCode = [regex]::Match($base, '(?i)(?:^|[._-])S(?<s>\d{1,2})E(?<ep>\d{1,3})(?=[._-]|$)')
+    }
+
     if ($mCode.Success) {
+        $sNum = 0
         $epCode = 0
+        try { $sNum = [int]$mCode.Groups['s'].Value } catch { $sNum = 0 }
         try { $epCode = [int]$mCode.Groups['ep'].Value } catch { $epCode = 0 }
         if ($epCode -gt 0) {
             $tail = ($base.Substring($mCode.Index + $mCode.Length)).Trim(' ', '.', '-', '_')
-            if ([string]::IsNullOrWhiteSpace($tail)) { $tail = "Episode $epCode" }
-            return [pscustomobject]@{ Episode = $epCode; Title = $tail }
+            return (New-EpisodeInfoResult -Episode $epCode -Title $tail -Season $sNum)
+        }
+    }
+
+    $allCodes = [regex]::Matches($base, '(?i)S(?<s>\d{1,2})E(?<ep>\d{1,3})')
+    if ($allCodes.Count -gt 0) {
+        $mCode = $allCodes[$allCodes.Count - 1]
+        $sNum = 0
+        $epCode = 0
+        try { $sNum = [int]$mCode.Groups['s'].Value } catch { $sNum = 0 }
+        try { $epCode = [int]$mCode.Groups['ep'].Value } catch { $epCode = 0 }
+        if ($epCode -gt 0) {
+            $tail = ($base.Substring($mCode.Index + $mCode.Length)).Trim(' ', '.', '-', '_')
+            return (New-EpisodeInfoResult -Episode $epCode -Title $tail -Season $sNum)
+        }
+    }
+
+    $mEps = [regex]::Match($base, '(?i)Eps(?<ep>\d{1,3})-\d{1,3}')
+    if ($mEps.Success) {
+        $epCode = 0
+        try { $epCode = [int]$mEps.Groups['ep'].Value } catch { $epCode = 0 }
+        if ($epCode -gt 0) {
+            $tail = ($base.Substring($mEps.Index + $mEps.Length)).Trim(' ', '.', '-', '_')
+            return (New-EpisodeInfoResult -Episode $epCode -Title $tail -Season 0)
+        }
+    }
+
+    $mCram = [regex]::Match($base, '(?i)^(?<show>.+?)\s+(?<s>[1-9])(?<ep>\d{2})\s+(?<ttl>.+)$')
+    if ($mCram.Success) {
+        $sNum = 0
+        $epCode = 0
+        try { $sNum = [int]$mCram.Groups['s'].Value } catch { $sNum = 0 }
+        try { $epCode = [int]$mCram.Groups['ep'].Value } catch { $epCode = 0 }
+        $showGuess = $mCram.Groups['show'].Value.Trim()
+        $ttl = $mCram.Groups['ttl'].Value.Trim()
+        if ($sNum -gt 0 -and $epCode -ge 0 -and $epCode -le 99 -and -not [string]::IsNullOrWhiteSpace($ttl)) {
+            return (New-EpisodeInfoResult -Episode $epCode -Title $ttl -Season $sNum -Series $showGuess)
+        }
+    }
+
+    $mParen = [regex]::Match($base, '(?i)^(?<show>.+?)\s+(?<s>\d{1,2})\s+\((?<ep>\d{1,3})\)\s*$')
+    if ($mParen.Success) {
+        $sNum = 0
+        $epCode = 0
+        try { $sNum = [int]$mParen.Groups['s'].Value } catch { $sNum = 0 }
+        try { $epCode = [int]$mParen.Groups['ep'].Value } catch { $epCode = 0 }
+        $showRaw = $mParen.Groups['show'].Value.Trim()
+        $showRaw = [regex]::Replace($showRaw, '^\[[^\]]+\]\s*', '').Trim()
+        if ($sNum -gt 0 -and $epCode -gt 0 -and -not [string]::IsNullOrWhiteSpace($showRaw)) {
+            $epTitle = ('Episode {0}' -f $epCode)
+            return (New-EpisodeInfoResult -Episode $epCode -Title $epTitle -Season $sNum -Series $showRaw)
         }
     }
 
@@ -104,8 +181,7 @@ function Get-EpisodeInfo {
     try { $ep = [int]$m.Groups['ep'].Value } catch { $ep = 0 }
     if ($ep -le 0) { return $null }
     $ttl = $m.Groups['title'].Value.Trim()
-    if ([string]::IsNullOrWhiteSpace($ttl)) { $ttl = "Episode $ep" }
-    return [pscustomobject]@{ Episode = $ep; Title = $ttl }
+    return (New-EpisodeInfoResult -Episode $ep -Title $ttl -Season 0)
 }
 
 function Get-SourceTrackerTopicIds {
@@ -210,6 +286,12 @@ function Try-ApplyTorrentHintToReviewRow {
     if ([string]::IsNullOrWhiteSpace([string]$Hint.Series)) { return $null }
     $seasonFromHint = [int]$Hint.Season
     if ($seasonFromHint -le 0 -and $null -ne $Series) { $seasonFromHint = [int]$Series.Season }
+    if ($seasonFromHint -le 0 -and $null -ne $Epi) {
+        try {
+            $fs = [int]$Epi.Season
+            if ($fs -gt 0) { $seasonFromHint = $fs }
+        } catch { }
+    }
     if ($seasonFromHint -le 0) { $seasonFromHint = 1 }
     $ext = [System.IO.Path]::GetExtension($src).TrimStart('.')
     $newDst = Build-CartoonDest -CurrentDestFullPath $CurrentDest -SeriesName ([string]$Hint.Series) -Season $seasonFromHint -Episode $Epi.Episode -EpisodeTitle $Epi.Title -Ext $ext
@@ -422,14 +504,29 @@ $outRows = foreach ($r in $rows) {
         $series = Resolve-SeriesFromPath -SourcePath $src
         $epi = Get-EpisodeInfo -FileName ([System.IO.Path]::GetFileName($src))
 
-        if ($null -ne $series -and $null -ne $epi) {
+        $seriesNameForDest = ''
+        $seasonForDest = 0
+        if ($null -ne $series) {
+            $seriesNameForDest = [string]$series.Series
+            $seasonForDest = [int]$series.Season
+        }
+        if ($null -ne $epi) {
+            if ($epi.Season -gt 0) { $seasonForDest = [int]$epi.Season }
+            if (-not [string]::IsNullOrWhiteSpace($epi.Series)) {
+                if ([string]::IsNullOrWhiteSpace($seriesNameForDest)) {
+                    $seriesNameForDest = [string]$epi.Series
+                }
+            }
+        }
+        if ($seasonForDest -gt 0 -and $null -ne $epi -and -not [string]::IsNullOrWhiteSpace($seriesNameForDest)) {
             $ext = [System.IO.Path]::GetExtension($src).TrimStart('.')
-            $newDst = Build-CartoonDest -CurrentDestFullPath $dst -SeriesName $series.Series -Season $series.Season -Episode $epi.Episode -EpisodeTitle $epi.Title -Ext $ext
+            $patNote = if ($null -ne $series) { "auto_from_source_pattern:$($series.Rule)" } else { 'auto_from_filename_episode' }
+            $newDst = Build-CartoonDest -CurrentDestFullPath $dst -SeriesName $seriesNameForDest -Season $seasonForDest -Episode $epi.Episode -EpisodeTitle $epi.Title -Ext $ext
             if (-not [string]::IsNullOrWhiteSpace($newDst)) {
                 $dst = $newDst
                 $destRoot = 'cartoons'
                 $decision = 'APPLY'
-                $decisionNote = "auto_from_source_pattern:$($series.Rule)"
+                $decisionNote = $patNote
                 $rule = 'review_repath_apply'
                 $autoRepath++
             }
