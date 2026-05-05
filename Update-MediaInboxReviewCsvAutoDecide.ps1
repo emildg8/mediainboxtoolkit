@@ -13,6 +13,7 @@
   - метаданные .torrent (bencode): слова из info.name и имён видеофайлов в раздаче; уникальное совпадение имени листа .mkv/.mp4/... с одной раздачей
   - опционально qBittorrent Web API: полный путь файла на диске клиента -> та же раздача (по info_hash), без хардкода URL (параметры или MIT_QBIT_*)
   - если файлы перенесли с каталога загрузок qBittorrent на NAS: префиксы -QbittorrentCsvSourcePrefix и -QbittorrentDownloadRootPrefix подставляют путь «как у клиента» для поиска в индексе
+  - спецвыпуски без SxxEyy: если на NAS уже есть папка сериала под Video\\cartoons\\<имя>, файл кладётся прямо в неё (корень сериала), см. Get-FlatSpecialLibraryRules
 #>
 [CmdletBinding()]
 param(
@@ -25,7 +26,8 @@ param(
     [string]$QbittorrentPassword = '',
     [switch]$QbittorrentSkipCertificateCheck,
     [string]$QbittorrentCsvSourcePrefix = '',
-    [string]$QbittorrentDownloadRootPrefix = ''
+    [string]$QbittorrentDownloadRootPrefix = '',
+    [switch]$SkipCartoonSeriesRootFlat
 )
 
 Set-StrictMode -Version Latest
@@ -226,7 +228,7 @@ function Resolve-SeriesFromPath {
         if ($m.Success) {
             $season = 0
             try { $season = [int]$m.Groups['s'].Value } catch { $season = 0 }
-            if ($season -gt 0) {
+            if ($season -ge 0 -and $season -le 99) {
                 return [pscustomobject]@{ Series = $p.Name; Season = $season; Rule = $p.Name }
             }
         }
@@ -256,6 +258,56 @@ function Resolve-SeriesFromTorrentName {
     return [pscustomobject]@{ Series = $title; Season = $season }
 }
 
+function Get-VideoLibraryRootFromPath {
+    param([string]$AnyPathBelowVideo)
+    if ([string]::IsNullOrWhiteSpace($AnyPathBelowVideo)) { return $null }
+    $idx = $AnyPathBelowVideo.IndexOf('\Video\', [StringComparison]::Ordinal)
+    if ($idx -lt 0) { return $null }
+    return $AnyPathBelowVideo.Substring(0, $idx + 7)
+}
+
+function Get-FlatSpecialLibraryRules {
+    return @(
+        @{
+            Id               = 'RobotChicken'
+            FileNameRegex    = '(?i)Robot\.Chicken'
+            FolderNameRegex  = '(?i)(Robot\s*Chicken|Робоцып|RoboChicken)'
+        }
+    )
+}
+
+function Find-CartoonSeriesFolderForFlatSpecial {
+    param(
+        [string]$SourceFullPath,
+        [string[]]$CartoonSeriesDirNames
+    )
+    if ($null -eq $CartoonSeriesDirNames -or $CartoonSeriesDirNames.Count -eq 0) { return $null }
+    $base = [System.IO.Path]::GetFileNameWithoutExtension([System.IO.Path]::GetFileName($SourceFullPath))
+    foreach ($rule in Get-FlatSpecialLibraryRules) {
+        if ($base -notmatch $rule.FileNameRegex) { continue }
+        foreach ($dirName in $CartoonSeriesDirNames) {
+            if ([string]::IsNullOrWhiteSpace($dirName)) { continue }
+            if ($dirName -match $rule.FolderNameRegex) {
+                return [pscustomobject]@{ FolderName = $dirName; RuleId = $rule.Id }
+            }
+        }
+    }
+    return $null
+}
+
+function Build-CartoonSeriesRootFlatDest {
+    param(
+        [string]$CurrentDestFullPath,
+        [string]$SourceFullPath,
+        [string]$SeriesFolderName,
+        [string]$LeafFileName
+    )
+    $root = Get-VideoLibraryRootFromPath $CurrentDestFullPath
+    if ($null -eq $root) { $root = Get-VideoLibraryRootFromPath $SourceFullPath }
+    if ([string]::IsNullOrWhiteSpace($root)) { return $null }
+    return (Join-Path (Join-Path (Join-Path $root 'cartoons') $SeriesFolderName) $LeafFileName)
+}
+
 function Build-CartoonDest {
     param(
         [string]$CurrentDestFullPath,
@@ -265,9 +317,8 @@ function Build-CartoonDest {
         [string]$EpisodeTitle,
         [string]$Ext
     )
-    $idx = $CurrentDestFullPath.IndexOf('\Video\')
-    if ($idx -lt 0) { return $null }
-    $root = $CurrentDestFullPath.Substring(0, $idx + 7)
+    $root = Get-VideoLibraryRootFromPath $CurrentDestFullPath
+    if ($null -eq $root) { return $null }
     $leaf = '{0} - S{1:D2}E{2:D2} - {3}.{4}' -f $SeriesName, $Season, $Episode, $EpisodeTitle, $Ext
     return (Join-Path (Join-Path (Join-Path (Join-Path $root 'cartoons') $SeriesName) ("Season {0}" -f $Season)) $leaf)
 }
@@ -473,6 +524,21 @@ $skip = 0
 $review = 0
 $autoRepath = 0
 
+$cartoonSeriesDirNames = [string[]]@()
+$pathForLibRoot = [string]$($rows | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.DestFullPath) -and ([string]$_.DestFullPath -like '*\Video\*') } | Select-Object -First 1 -ExpandProperty DestFullPath)
+if ([string]::IsNullOrWhiteSpace($pathForLibRoot)) {
+    $pathForLibRoot = [string]$($rows | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.SourceFullPath) -and ([string]$_.SourceFullPath -like '*\Video\*') } | Select-Object -First 1 -ExpandProperty SourceFullPath)
+}
+if (-not [string]::IsNullOrWhiteSpace($pathForLibRoot)) {
+    $vLib = Get-VideoLibraryRootFromPath $pathForLibRoot
+    if (-not [string]::IsNullOrWhiteSpace($vLib)) {
+        $cartoonsRoot = Join-Path $vLib 'cartoons'
+        if (Test-Path -LiteralPath $cartoonsRoot) {
+            $cartoonSeriesDirNames = @(Get-ChildItem -LiteralPath $cartoonsRoot -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })
+        }
+    }
+}
+
 $outRows = foreach ($r in $rows) {
     $src = [string]$r.SourceFullPath
     $dst = [string]$r.DestFullPath
@@ -518,7 +584,7 @@ $outRows = foreach ($r in $rows) {
                 }
             }
         }
-        if ($seasonForDest -gt 0 -and $null -ne $epi -and -not [string]::IsNullOrWhiteSpace($seriesNameForDest)) {
+        if ($seasonForDest -ge 0 -and $null -ne $epi -and -not [string]::IsNullOrWhiteSpace($seriesNameForDest)) {
             $ext = [System.IO.Path]::GetExtension($src).TrimStart('.')
             $patNote = if ($null -ne $series) { "auto_from_source_pattern:$($series.Rule)" } else { 'auto_from_filename_episode' }
             $newDst = Build-CartoonDest -CurrentDestFullPath $dst -SeriesName $seriesNameForDest -Season $seasonForDest -Episode $epi.Episode -EpisodeTitle $epi.Title -Ext $ext
@@ -583,6 +649,22 @@ $outRows = foreach ($r in $rows) {
             }
         }
 
+        if (($decision -ne 'APPLY') -and (-not $SkipCartoonSeriesRootFlat) -and ($null -eq $epi) -and ($cartoonSeriesDirNames.Count -gt 0)) {
+            $flatHit = Find-CartoonSeriesFolderForFlatSpecial -SourceFullPath $src -CartoonSeriesDirNames $cartoonSeriesDirNames
+            if ($null -ne $flatHit) {
+                $leafFn = [System.IO.Path]::GetFileName($src)
+                $flatDst = Build-CartoonSeriesRootFlatDest -CurrentDestFullPath $dst -SourceFullPath $src -SeriesFolderName $flatHit.FolderName -LeafFileName $leafFn
+                if (-not [string]::IsNullOrWhiteSpace($flatDst)) {
+                    $dst = $flatDst
+                    $destRoot = 'cartoons'
+                    $decision = 'APPLY'
+                    $decisionNote = "auto_series_root_flat:$($flatHit.RuleId)"
+                    $rule = 'cartoon_series_root_flat'
+                    $autoRepath++
+                }
+            }
+        }
+
         if ([string]::IsNullOrWhiteSpace($decision)) {
             $decision = 'REVIEW'
         }
@@ -624,3 +706,4 @@ $topicTagged = @($torrentHints | Where-Object { -not [string]::IsNullOrWhiteSpac
 $leafIdx = $leafToHintIndexes.Count
 $qbitN = $qbitPathToHint.Count
 Write-Host "TorrentHints: $($torrentHints.Count)  (rutracker TopicId: $topicTagged)  videoLeafKeys: $leafIdx  qBitPathKeys: $qbitN"
+Write-Host "CartoonSeriesDirsOnLibrary: $($cartoonSeriesDirNames.Count)"

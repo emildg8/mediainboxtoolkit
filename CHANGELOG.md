@@ -1,5 +1,9 @@
 ﻿# CHANGELOG
 
+## 0.2.12 - 2026-05-06 04:00:00 +03:00
+- `Update-MediaInboxReviewCsvAutoDecide.ps1` — **спецвыпуски без номера серии в имени**: при пустом `Get-EpisodeInfo` и существующей папке сериала под `Video\\cartoons\\<имя>` файл назначается в **корень** этой папки (`auto_series_root_flat`, правило `cartoon_series_root_flat`). Первый набор правил: Robot Chicken / `Робоцып` (`Get-FlatSpecialLibraryRules`). Отключение: `-SkipCartoonSeriesRootFlat`.
+- Тот же скрипт — `Resolve-SeriesFromPath` допускает **сезон 0** (например S00); общий корень `Video\` через `Get-VideoLibraryRootFromPath`.
+
 ## 0.2.11 - 2026-05-06 02:30:00 +03:00
 - `Update-MediaInboxReviewCsvAutoDecide.ps1` — расширен `Get-EpisodeInfo`: `S01.E02`, разделители `_S01E02_` / `.S01E02.`, последнее вхождение `SxxEyy` (например `…3S03E01`), «слепленный» `701` = S7E01 + имя шоу из начала имени, `Eps21-22`, хвост `… сезон (номер)` с опциональным тегом `[релизер]`, поля `Season`/`Series` для репаса без паттерна только в пути.
 
