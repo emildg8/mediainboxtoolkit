@@ -63,12 +63,14 @@
       "(?i)Alice\\.(?:in\\.)?Wonderland\\.1951"
     ],
     "seriesQueryRewrites": [
-      { "pattern": "^The Wednesday Play$", "seriesGuess": "Wednesday" },
-      { "pattern": "^Peacemakers$", "seriesGuess": "Peacemaker" },
-      { "pattern": "^Foundations of the West$", "seriesGuess": "Foundation" },
-      { "pattern": "^Bridging the Expanse$", "seriesGuess": "The Expanse" },
-      { "pattern": "^The Wheel of Time Origins$", "seriesGuess": "The Wheel of Time" },
-      { "pattern": "^關於未知的我們$", "seriesGuess": "Robot Chicken" }
+      { "pattern": "(?i)The Wednesday Play", "seriesGuess": "Wednesday", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Peacemakers", "seriesGuess": "Peacemaker", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Invincible\\.2021", "seriesGuess": "Invincible", "matchField": "basename" },
+      { "pattern": "^Foundations of the West$", "seriesGuess": "Foundation", "matchField": "seriesGuess" },
+      { "pattern": "^Bridging the Expanse$", "seriesGuess": "The Expanse", "matchField": "seriesGuess" },
+      { "pattern": "^The Wheel of Time Origins$", "seriesGuess": "The Wheel of Time", "matchField": "seriesGuess" },
+      { "pattern": "^關於未知的我們$", "seriesGuess": "Robot Chicken", "matchField": "seriesGuess" },
+      { "pattern": "(?i)Подозрительная сова", "seriesGuess": "Подозрительная сова", "matchField": "relativePath" }
     ],
     "seriesFolderByTmdbTvId": {
       "95557": "Непобедимый"

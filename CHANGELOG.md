@@ -1,5 +1,9 @@
 ﻿# CHANGELOG
 
+## 0.2.22 - 2026-05-07 00:05:00 +03:00
+- **`MediaInboxToolkit.Engine.ps1`** — **`classification.seriesQueryRewrites`**: опциональный **`matchField`** — `seriesGuess` (как раньше), **`basename`** (stem файла), **`relativePath`** (путь от инбокса), **`seriesGuessOrBasename`**; правила применяются **по цепочке** до TMDB. Вызов **`Get-CachedSeriesTmdbRow`** передаёт stem и относительный путь.
+- **`sort-inbox.video-under-sort*.example.json`**, **`README.md`** — расширенные примеры (Wednesday/Peacemaker, Invincible.2021, путь с «Подозрительная сова»).
+
 ## 0.2.21 - 2026-05-06 23:15:00 +03:00
 - **`MediaInboxToolkit.Engine.ps1`** — **`classification.seriesQueryRewrites`**: до TMDB подмена **целого** `SeriesGuess` по первому совпавшему regex (ошибочные названия релизов / чужие локали). **`classification.seriesFolderByTmdbTvId`**: после выбора шоу по TMDB принудительное имя папки сериала по **id** (например русское «Непобедимый» вместо англ. из API).
 - **`sort-inbox.video-under-sort*.example.json`**, **`README.md`** — примеры и описание ключей.

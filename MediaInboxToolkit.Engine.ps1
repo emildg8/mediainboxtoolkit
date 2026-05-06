@@ -103,17 +103,46 @@ function Normalize-SortSeriesSearchQuery([string]$s) {
 function Apply-MitSeriesQueryRewrites {
     param(
         [string]$Guess,
+        [string]$BasenameStem,
+        [string]$RelPathFromInbox,
         [System.Collections.Generic.List[object]]$Rules
     )
-    if ([string]::IsNullOrWhiteSpace($Guess) -or $null -eq $Rules -or $Rules.Count -eq 0) { return $Guess }
+    if ($null -eq $Rules -or $Rules.Count -eq 0) { return $Guess }
+    $sg = if ($null -eq $Guess) { '' } else { $Guess }
+    $bn = if ($null -eq $BasenameStem) { '' } else { $BasenameStem }
+    $rel = if ([string]::IsNullOrWhiteSpace($RelPathFromInbox)) { '' } else { ($RelPathFromInbox -replace '/', '\') }
     foreach ($rw in $Rules) {
         if ($null -eq $rw) { continue }
+        $field = 'seriesGuess'
         try {
-            if ($rw.Pattern.IsMatch($Guess)) { return [string]$rw.Replacement }
+            if ($null -ne $rw.MatchField -and -not [string]::IsNullOrWhiteSpace([string]$rw.MatchField)) {
+                $field = [string]$rw.MatchField.Trim()
+            }
         }
         catch { }
+        if ($field -notin @('seriesGuess', 'basename', 'relativePath', 'seriesGuessOrBasename')) { $field = 'seriesGuess' }
+        $matched = $false
+        try {
+            switch ($field) {
+                'seriesGuess' {
+                    if (-not [string]::IsNullOrWhiteSpace($sg) -and $rw.Pattern.IsMatch($sg)) { $matched = $true }
+                }
+                'basename' {
+                    if (-not [string]::IsNullOrWhiteSpace($bn) -and $rw.Pattern.IsMatch($bn)) { $matched = $true }
+                }
+                'relativePath' {
+                    if (-not [string]::IsNullOrWhiteSpace($rel) -and $rw.Pattern.IsMatch($rel)) { $matched = $true }
+                }
+                'seriesGuessOrBasename' {
+                    if (-not [string]::IsNullOrWhiteSpace($sg) -and $rw.Pattern.IsMatch($sg)) { $matched = $true }
+                    elseif (-not [string]::IsNullOrWhiteSpace($bn) -and $rw.Pattern.IsMatch($bn)) { $matched = $true }
+                }
+            }
+        }
+        catch { }
+        if ($matched) { $sg = [string]$rw.Replacement }
     }
-    return $Guess
+    return $sg
 }
 
 function Remove-SortReleaseTechnicalTokens([string]$s) {
@@ -639,7 +668,12 @@ if ($policy.PSObject.Properties.Name -contains 'classification' -and $null -ne $
             if ([string]::IsNullOrWhiteSpace($pat) -or [string]::IsNullOrWhiteSpace($rep)) { continue }
             try {
                 $rx = [regex]::new($pat, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-                [void]$mitSeriesQueryRewrites.Add([pscustomobject]@{ Pattern = $rx; Replacement = $rep.Trim() })
+                $mf = 'seriesGuess'
+                if ($pn -contains 'matchField' -and -not [string]::IsNullOrWhiteSpace([string]$rw.matchField)) {
+                    $mf = [string]$rw.matchField.Trim()
+                }
+                if ($mf -notin @('seriesGuess', 'basename', 'relativePath', 'seriesGuessOrBasename')) { $mf = 'seriesGuess' }
+                [void]$mitSeriesQueryRewrites.Add([pscustomobject]@{ Pattern = $rx; Replacement = $rep.Trim(); MatchField = $mf })
             }
             catch { }
         }
@@ -732,9 +766,11 @@ function Get-CachedSeriesTmdbRow {
     param(
         [string]$SeriesGuess,
         [string]$ApiKey,
-        [string]$Lang
+        [string]$Lang,
+        [string]$BasenameStem = '',
+        [string]$RelativePathFromInbox = ''
     )
-    $SeriesGuess = Apply-MitSeriesQueryRewrites -Guess $SeriesGuess -Rules $mitSeriesQueryRewrites
+    $SeriesGuess = Apply-MitSeriesQueryRewrites -Guess $SeriesGuess -BasenameStem $BasenameStem -RelPathFromInbox $RelativePathFromInbox -Rules $mitSeriesQueryRewrites
     $stemForFolder = Get-SortTvShowTitleFromPollutedGuess $SeriesGuess
     $normQ = Normalize-SortSeriesSearchQuery $SeriesGuess
     if ([string]::IsNullOrWhiteSpace($normQ)) { $normQ = $SeriesGuess }
@@ -1242,7 +1278,8 @@ foreach ($f in $files) {
     $activeDestRootKey = ''
 
     if ($cls.Kind -eq 'series') {
-        $seriesRow = Get-CachedSeriesTmdbRow -SeriesGuess $cls.SeriesGuess -ApiKey $key -Lang $tmdbLang
+        $stemBn = [System.IO.Path]::GetFileNameWithoutExtension($f.Name)
+        $seriesRow = Get-CachedSeriesTmdbRow -SeriesGuess $cls.SeriesGuess -ApiKey $key -Lang $tmdbLang -BasenameStem $stemBn -RelativePathFromInbox $relFromInbox
         if ($tmdbKindRefineEnabled -and $seriesRow.TvId -and (Get-Command Resolve-MediaInboxContentKindFromTmdbTv -ErrorAction SilentlyContinue)) {
             $tvDet = Get-MitCachedTmdbTvDetails -TvId ([int]$seriesRow.TvId) -ApiKey $key -Lang $tmdbLang
             $adjTv = Resolve-MediaInboxContentKindFromTmdbTv -TvDetails $tvDet -HeuristicKind $ckKind -HeuristicConfidence $ckConfInt
