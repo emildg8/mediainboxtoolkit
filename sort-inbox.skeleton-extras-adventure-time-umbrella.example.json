@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "description": "Доп. вариант скелета: один зонт «Время приключений» под cartoon-root (как sort-inbox.video-under-sort.example.json — сегмент …\\Video\\cartoons). Три подпапки для ручной раскладки трёх шоу (Финн и Джейк / Далёкие земли / Фионна и Кейк). Скопируйте массив skeletonExtraRelatives в folders своей политики или объедините JSON перед запуском New-MediaInboxDestinationSkeleton.ps1.",
+    "updatedAt": "2026-05-06",
+    "skeletonProfile": "ascii",
+    "matchesDestinationsCartoonsRelative": "Video\\Sort\\Video\\cartoons"
+  },
+  "skeletonExtraRelatives": [
+    "Video\\Sort\\Video\\cartoons\\Время приключений",
+    "Video\\Sort\\Video\\cartoons\\Время приключений\\Время приключений 1 - Финн и Джейк",
+    "Video\\Sort\\Video\\cartoons\\Время приключений\\Время приключений 2 - Далёкие земли",
+    "Video\\Sort\\Video\\cartoons\\Время приключений\\Время приключений 3 - Фионна и Кейк"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "description": "То же, что sort-inbox.skeleton-extras-adventure-time-umbrella.example.json, но под кириллический cartoon-root (как sort-inbox.video-under-sort.cyrillic.example.json — …\\Video\\Мультсериалы).",
+    "updatedAt": "2026-05-06",
+    "skeletonProfile": "cyrillic",
+    "matchesDestinationsCartoonsRelative": "Video\\Sort\\Video\\Мультсериалы"
+  },
+  "skeletonExtraRelatives": [
+    "Video\\Sort\\Video\\Мультсериалы\\Время приключений",
+    "Video\\Sort\\Video\\Мультсериалы\\Время приключений\\Время приключений 1 - Финн и Джейк",
+    "Video\\Sort\\Video\\Мультсериалы\\Время приключений\\Время приключений 2 - Далёкие земли",
+    "Video\\Sort\\Video\\Мультсериалы\\Время приключений\\Время приключений 3 - Фионна и Кейк"
+  ]
+}

@@ -5,6 +5,7 @@
 .NOTES
   Политика: folders.skeletonProfile (ascii|cyrillic) — только метка для UI/доков; пути задают destinations.
   folders.workspaceSeriesToolkitSubfolders — не создаёт отдельных корней (это подпапки под теми же корнями), движок сортировки их не читает.
+  Готовые доп. списки для skeletonExtraRelatives (например зонт «Время приключений»): sort-inbox.skeleton-extras-adventure-time-umbrella*.example.json — влейте массив в folders основной политики или объедините JSON вручную.
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
