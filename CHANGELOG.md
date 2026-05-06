@@ -1,4 +1,7 @@
-﻿# CHANGELOG
+# CHANGELOG
+
+## 0.2.25 - 2026-05-06 12:45:00 +03:00
+- **Релизная документация GitHub:** ссылки на changelog монорепозитория в **.github/workflows/release.yml** и **.github/scripts/Build-MediaInboxRelease.ps1** переведены на ветку **master**, чтобы в карточке релиза всегда открывалась актуальная история изменений.
 
 ## 0.2.24 - 2026-05-07 18:30:00 +03:00
 - **Робоцып / Robot Chicken и TMDB:** в **`Resolve-LooseCartoonEpisodesFromTmdb.config.json`** для папки **«Робоцып»** указан корректный **`tvId` 709** (*Robot Chicken*). Ранее по ошибке стоял **1433** (*American Dad!*) — fuzzy-сопоставление названий файлов шло с чужим сериалом, сезоны и подписи получались неверными.
