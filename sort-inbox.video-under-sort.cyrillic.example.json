@@ -61,7 +61,18 @@
     "featureMeter": { "minSecondsForFullFeature": 3600 },
     "cartoonMovieBasenameRegexes": [
       "(?i)Alice\\.(?:in\\.)?Wonderland\\.1951"
-    ]
+    ],
+    "seriesQueryRewrites": [
+      { "pattern": "^The Wednesday Play$", "seriesGuess": "Wednesday" },
+      { "pattern": "^Peacemakers$", "seriesGuess": "Peacemaker" },
+      { "pattern": "^Foundations of the West$", "seriesGuess": "Foundation" },
+      { "pattern": "^Bridging the Expanse$", "seriesGuess": "The Expanse" },
+      { "pattern": "^The Wheel of Time Origins$", "seriesGuess": "The Wheel of Time" },
+      { "pattern": "^關於未知的我們$", "seriesGuess": "Robot Chicken" }
+    ],
+    "seriesFolderByTmdbTvId": {
+      "95557": "Непобедимый"
+    }
   },
   "scope": {
     "videoOnly": true,

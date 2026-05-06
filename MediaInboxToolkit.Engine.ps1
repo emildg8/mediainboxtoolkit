@@ -100,6 +100,22 @@ function Normalize-SortSeriesSearchQuery([string]$s) {
     return $t
 }
 
+function Apply-MitSeriesQueryRewrites {
+    param(
+        [string]$Guess,
+        [System.Collections.Generic.List[object]]$Rules
+    )
+    if ([string]::IsNullOrWhiteSpace($Guess) -or $null -eq $Rules -or $Rules.Count -eq 0) { return $Guess }
+    foreach ($rw in $Rules) {
+        if ($null -eq $rw) { continue }
+        try {
+            if ($rw.Pattern.IsMatch($Guess)) { return [string]$rw.Replacement }
+        }
+        catch { }
+    }
+    return $Guess
+}
+
 function Remove-SortReleaseTechnicalTokens([string]$s) {
     if ([string]::IsNullOrWhiteSpace($s)) { return '' }
     $t = $s
@@ -531,6 +547,8 @@ $mitEpTitleFuzzMaxDurationSec = 1500
 $mitEpTitleFuzzMaxBasenameChars = 72
 $mitEpTitleFuzzMaxSeasonScan = 28
 $mitEpTitleFuzzPathHints = [System.Collections.Generic.List[object]]::new()
+$mitSeriesQueryRewrites = [System.Collections.Generic.List[object]]::new()
+$mitSeriesFolderByTmdbTvId = @{}
 $orphanSeasonFolderSeriesList = [System.Collections.Generic.List[object]]::new()
 $cartoonMovieBasenameRegexes = [System.Collections.Generic.List[string]]::new()
 if ($policy.PSObject.Properties.Name -contains 'classification' -and $null -ne $policy.classification) {
@@ -610,6 +628,29 @@ if ($policy.PSObject.Properties.Name -contains 'classification' -and $null -ne $
                 if ($null -eq $row) { continue }
                 [void]$mitEpTitleFuzzPathHints.Add($row)
             }
+        }
+    }
+    if ($cf.PSObject.Properties.Name -contains 'seriesQueryRewrites' -and $null -ne $cf.seriesQueryRewrites) {
+        foreach ($rw in @($cf.seriesQueryRewrites)) {
+            if ($null -eq $rw) { continue }
+            $pn = $rw.PSObject.Properties.Name
+            $pat = if ($pn -contains 'pattern') { [string]$rw.pattern } else { '' }
+            $rep = if ($pn -contains 'seriesGuess') { [string]$rw.seriesGuess } else { '' }
+            if ([string]::IsNullOrWhiteSpace($pat) -or [string]::IsNullOrWhiteSpace($rep)) { continue }
+            try {
+                $rx = [regex]::new($pat, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+                [void]$mitSeriesQueryRewrites.Add([pscustomobject]@{ Pattern = $rx; Replacement = $rep.Trim() })
+            }
+            catch { }
+        }
+    }
+    if ($cf.PSObject.Properties.Name -contains 'seriesFolderByTmdbTvId' -and $null -ne $cf.seriesFolderByTmdbTvId) {
+        $oid = $cf.seriesFolderByTmdbTvId
+        foreach ($p in $oid.PSObject.Properties) {
+            $tid = [string]$p.Name
+            $folder = [string]$p.Value
+            if ([string]::IsNullOrWhiteSpace($tid) -or [string]::IsNullOrWhiteSpace($folder)) { continue }
+            $mitSeriesFolderByTmdbTvId[$tid.Trim()] = $folder.Trim()
         }
     }
 }
@@ -693,6 +734,7 @@ function Get-CachedSeriesTmdbRow {
         [string]$ApiKey,
         [string]$Lang
     )
+    $SeriesGuess = Apply-MitSeriesQueryRewrites -Guess $SeriesGuess -Rules $mitSeriesQueryRewrites
     $stemForFolder = Get-SortTvShowTitleFromPollutedGuess $SeriesGuess
     $normQ = Normalize-SortSeriesSearchQuery $SeriesGuess
     if ([string]::IsNullOrWhiteSpace($normQ)) { $normQ = $SeriesGuess }
@@ -719,6 +761,14 @@ function Get-CachedSeriesTmdbRow {
                 $row.SeriesFolder = ConvertTo-SafeFolderName ([string]$pick.name)
             }
             $row.Notes = "tmdb_tv:$tid"
+        }
+    }
+    if ($null -ne $row.TvId -and $mitSeriesFolderByTmdbTvId.Count -gt 0) {
+        $tidKey = ([string]$row.TvId).Trim()
+        if ($mitSeriesFolderByTmdbTvId.ContainsKey($tidKey)) {
+            $row.SeriesFolder = ConvertTo-SafeFolderName ([string]$mitSeriesFolderByTmdbTvId[$tidKey])
+            if ($row.Notes) { $row.Notes += ';' }
+            $row.Notes += 'folder_tv_id_policy'
         }
     }
     $seriesResolveCache[$normQ] = $row

@@ -56,7 +56,7 @@
 
 ### Фаза 2
 
-- Учёт `series-aliases` / локальных overrides для «плохих» имён.
+- Учёт `series-aliases` / локальных overrides для «плохих» имён (в политике: **`classification.seriesQueryRewrites`** — regex→`seriesGuess` до TMDB; **`classification.seriesFolderByTmdbTvId`** — имя папки по `tv id` после матча).
 - Связка с основным движком SeriesToolkit для финальной нормализации эпизодов после раскладки по сериалам.
 - Политика: **`destinationsByKind`** / **`destinationsByKindMinConfidence`** — выбор целевой ветки (`animeSeries`, `movies`, …) по эвристике вида контента; **`safety`** — не переносить файлы вне inbox и/или уже лежащие под корнями библиотеки.
 - **`classification`** — `folderSeasonContext` (родитель `Season N` / `N season` + файл `NN. …`; при необходимости `orphanSeasonFolderSeriesMap`: одиночная папка сезона → `seriesGuess`, `SortSource` = `folder_season_episode_orphan_map`); `tvSpecialFilenameBoost` (Robot Chicken Star Wars Episode I/II/III → TV); `movies.allowMissingYearIfTmdbMatched`; fallback-запросы TMDB movie по коротким вариантам строки; **`webTmdbResolve`** (DDG/Яндекс → id TMDB, без API Google); **`featureMeter.minSecondsForFullFeature`** (по умолчанию 3600 с — порог «полный метр» по ffprobe); переклассификация короткого файла с `SxxEyy` в сериал при совпадении TV.

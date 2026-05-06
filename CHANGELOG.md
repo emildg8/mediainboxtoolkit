@@ -1,5 +1,9 @@
 ﻿# CHANGELOG
 
+## 0.2.21 - 2026-05-06 23:15:00 +03:00
+- **`MediaInboxToolkit.Engine.ps1`** — **`classification.seriesQueryRewrites`**: до TMDB подмена **целого** `SeriesGuess` по первому совпавшему regex (ошибочные названия релизов / чужие локали). **`classification.seriesFolderByTmdbTvId`**: после выбора шоу по TMDB принудительное имя папки сериала по **id** (например русское «Непобедимый» вместо англ. из API).
+- **`sort-inbox.video-under-sort*.example.json`**, **`README.md`** — примеры и описание ключей.
+
 ## 0.2.20 - 2026-05-06 22:00:00 +03:00
 - **`sort-inbox.skeleton-extras-adventure-time-umbrella.example.json`** / **`.cyrillic.example.json`** — дополнительный вариант **`folders.skeletonExtraRelatives`**: зонт **`Время приключений`** с тремя подпапками (Финн и Джейк / Далёкие земли / Фионна и Кейк) под `cartoons` или **`Мультсериалы`**.
 - **`README.md`** — ссылка на эти фрагменты рядом с описанием скелета.
