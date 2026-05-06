@@ -22,7 +22,7 @@ jobs:
         id: pack
         shell: pwsh
         env:
-          MIT_MONO_CHANGELOG_URL: 'https://github.com/emildg8/SeriesToolkit/blob/media-inbox-toolkit/MediaInboxToolkit/CHANGELOG.md'
+          MIT_MONO_CHANGELOG_URL: 'https://github.com/emildg8/SeriesToolkit/blob/master/MediaInboxToolkit/CHANGELOG.md'
         run: |
           $tag = $env:GITHUB_REF_NAME.Trim()
           $ver = $tag.TrimStart('v')

@@ -13,7 +13,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$Version,
     [Parameter(Mandatory = $true)][string]$OutDir,
-    [string]$MonorepoChangelogUrl = 'https://github.com/emildg8/SeriesToolkit/blob/media-inbox-toolkit/MediaInboxToolkit/CHANGELOG.md',
+    [string]$MonorepoChangelogUrl = 'https://github.com/emildg8/SeriesToolkit/blob/master/MediaInboxToolkit/CHANGELOG.md',
     [string]$RepoRoot = ''
 )
 
