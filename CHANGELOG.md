@@ -1,5 +1,13 @@
 ﻿# CHANGELOG
 
+## 0.2.24 - 2026-05-07 18:30:00 +03:00
+- **Робоцып / Robot Chicken и TMDB:** в **`Resolve-LooseCartoonEpisodesFromTmdb.config.json`** для папки **«Робоцып»** указан корректный **`tvId` 709** (*Robot Chicken*). Ранее по ошибке стоял **1433** (*American Dad!*) — fuzzy-сопоставление названий файлов шло с чужим сериалом, сезоны и подписи получались неверными.
+- **Пример политики:** в **`sort-inbox.example.json`** для `shortFormEpisodeTitleGuess.pathContainsToTmdbTvId` (строка с Robot Chicken) тот же идентификатор **709** вместо 1433.
+
+## 0.2.23 - 2026-05-07 12:00:00 +03:00
+- **`Resolve-LooseCartoonEpisodesFromTmdb.ps1`:** если по названию файла эпизод в TMDB не находится, можно получить подсказку **SxxEyy** из локальных **`.torrent`** (имя видеофайла должно совпадать с листом раздачи) и при необходимости из **qBittorrent Web API** (полные пути по `info_hash`, та же идея, что в **`Update-MediaInboxReviewCsvAutoDecide.ps1`**).
+- **`Resolve-LooseCartoonEpisodesFromTmdb.config.json`:** добавлены **`torrentScanRoots`** (каталоги для рекурсивного поиска `.torrent`) и блок **`qbittorrent`**: `webUiUrl`, `skipCertificateCheck`, **`pathMap`** (пары **`from`** / **`to`** — путь у клиента и префикс пути на NAS). Учётные данные и URL можно задать переменными **`MIT_QBIT_WEBUI`**, **`MIT_QBIT_USER`**, **`MIT_QBIT_PASS`**.
+
 ## 0.2.22 - 2026-05-07 00:05:00 +03:00
 - **`MediaInboxToolkit.Engine.ps1`** — **`classification.seriesQueryRewrites`**: опциональный **`matchField`** — `seriesGuess` (как раньше), **`basename`** (stem файла), **`relativePath`** (путь от инбокса), **`seriesGuessOrBasename`**; правила применяются **по цепочке** до TMDB. Вызов **`Get-CachedSeriesTmdbRow`** передаёт stem и относительный путь.
 - **`sort-inbox.video-under-sort*.example.json`**, **`README.md`** — расширенные примеры (Wednesday/Peacemaker, Invincible.2021, путь с «Подозрительная сова»).
@@ -134,7 +142,7 @@
 
 ## 0.2.0 - 2026-05-04 18:19:15 +03:00
 - `Fetch-VideoMetadata.ps1`: `Find-TmdbTvEpisodeByTitleFuzzy`, `Test-SortEpisodeTitleFuzzyEquals` — поиск S/E по названию эпизода в сезонах TMDB (скан сверху вниз).
-- Политика `classification.shortFormEpisodeTitleGuess`: включение, `maxDurationSec`, `maxBasenameChars`, `maxSeasonsToScanPerShow`, привязка `pathContainsToTmdbTvId` (пример Robot Chicken / TMDB 1433).
+- Политика `classification.shortFormEpisodeTitleGuess`: включение, `maxDurationSec`, `maxBasenameChars`, `maxSeasonsToScanPerShow`, привязка `pathContainsToTmdbTvId` (пример Robot Chicken / TMDB 709).
 - Движок: `Invoke-MediaInboxEpisodeTitleFuzzyReclassify` после featureMeter/web — короткий файл без `SxxEyy`, кандидаты из пути, веб-ссылок TMDB и (для многословных имён) `Search-TmdbTvSeries`; `SortSource: mit_episode_title_fuzzy`.
 - Пример `sort-inbox.example.json` дополнен блоком `shortFormEpisodeTitleGuess`.
 - Snapshot: OLD/MediaInboxToolkit_v0.1.9_20260504-181915 (launcher MediaInboxToolkit.ps1).

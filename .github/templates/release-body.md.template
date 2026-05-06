@@ -1,6 +1,6 @@
 ## MediaInboxToolkit {{SEM}}
 
-Входная сортировка видео (inbox, политика JSON, TMDB, Blu-ray remux). К этому репозиторию при публикации из монорепо добавляется общий модуль **`Fetch-VideoMetadata.ps1`** в корень архива.
+Инструмент для **входной сортировки** видео: из инбокса в структуру библиотеки по JSON-политике, с опорой на TMDB и учётом Blu-ray remux. В корень архива при сборке кладётся общий модуль **`Fetch-VideoMetadata.ps1`** (тот же файл, что лежит рядом с каталогом `MediaInboxToolkit` в монорепозитории).
 
 ### Что нового
 
@@ -8,20 +8,22 @@
 
 ### Состав архива **`{{ZIPNAME}}`** (~{{SIZEKB}} KB)
 
-- **`MediaInboxToolkit.ps1`** — запуск dry-run / apply
-- **`MediaInboxToolkit.Engine.ps1`** — движок сортировки
-- **`sort-inbox.example.json`** — шаблон политики
-- **`README.md`** / **`CHANGELOG.md`** — документация и история версий
-- **`Fetch-VideoMetadata.ps1`** — метаданные TMDB/веб (в **корне** ZIP)
+| Путь | Назначение |
+|------|------------|
+| **`MediaInboxToolkit.ps1`** | Запуск dry-run / apply |
+| **`MediaInboxToolkit.Engine.ps1`** | Движок сортировки |
+| **`sort-inbox.example.json`** | Шаблон политики |
+| **`README.md`**, **`CHANGELOG.md`** | Документация и история версий |
+| **`Fetch-VideoMetadata.ps1`** | Запросы TMDB и вспомогательная логика метаданных (**в корне** ZIP) |
 
 ### ffprobe
 
-Для длительности файлов используется **ffprobe**. После установки FFmpeg через WinGet shim обычно доступен как **`%LocalAppData%\Microsoft\WinGet\Links\ffprobe.exe`** — скрипт ищет его даже без обновления **`PATH`** в текущей сессии.
+Для длительности файлов используется **ffprobe**. Если FFmpeg установлен через WinGet, shim часто лежит в **`%LocalAppData%\Microsoft\WinGet\Links\ffprobe.exe`** — скрипты подхватывают его даже без правки **`PATH`** в текущей сессии.
 
 ### Ссылки
 
 - [CHANGELOG в этом репозитории](https://github.com/emildg8/MediaInboxToolkit/blob/main/CHANGELOG.md)
-- [История в монорепо SeriesToolkit]({{MONO_URL}}) (ветка `media-inbox-toolkit`)
+- [Журнал в монорепозитории]({{MONO_URL}}) (ветка разработки `media-inbox-toolkit`)
 
 ### Контрольная сумма SHA-256
 

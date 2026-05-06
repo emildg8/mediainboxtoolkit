@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 2,
+  "cartoonsRoot": "\\\\Emilian_TNAS\\emildg8\\Video\\Sort\\Video\\cartoons",
+  "matchLanguage": "en-US",
+  "displayLanguage": "ru-RU",
+  "matchLanguageFallbacks": ["ru-RU", "it-IT", "sq-AL"],
+  "seasonFolderFormat": "Сезон {0}",
+  "guessReplacements": [
+    { "pattern": "(?i)Live and Dine in L\\.?A", "replacement": "To Live and Die in L.A." },
+    { "pattern": "(?i)^To Live and Dine in L\\.?A\\.?$", "replacement": "To Live and Die in L.A." },
+    { "pattern": "(?i)^Хеллоуин.*$", "replacement": "Hilloween" }
+  ],
+  "episodeGuessOverrides": [
+    {
+      "folder": "Царь горы",
+      "pattern": "(?i)^По стопам отца$",
+      "season": 1,
+      "episode": 8,
+      "displayTitle": "По стопам отца"
+    },
+    {
+      "folder": "Царь горы",
+      "pattern": "(?i)^Старомодная\\s+комедия$",
+      "season": 1,
+      "episode": 2,
+      "displayTitle": "Старомодная Пег"
+    },
+    {
+      "folder": "Царь горы",
+      "pattern": "(?i)^Родео$",
+      "season": 6,
+      "episode": 18,
+      "displayTitle": "Моё личное родео"
+    },
+    {
+      "folder": "Царь горы",
+      "pattern": "(?i)^Мертвая\\s+пробка$",
+      "season": 2,
+      "episode": 16,
+      "displayTitle": "Пробка"
+    },
+    {
+      "folder": "Царь горы",
+      "pattern": "(?i)^Однажды\\s+в\\s+Техасе$",
+      "season": 7,
+      "episode": 7,
+      "displayTitle": "Техасская резня Skilsaw"
+    },
+    {
+      "folder": "Закусочная Боба",
+      "pattern": "(?i)^Байкеры$",
+      "season": 9,
+      "episode": 16,
+      "displayTitle": "Бродячий выБобной"
+    },
+    {
+      "folder": "Закусочная Боба",
+      "pattern": "(?i)^Собачий\\s+полдень$",
+      "season": 2,
+      "episode": 2,
+      "displayTitle": "Бобрый день"
+    },
+    {
+      "folder": "Закусочная Боба",
+      "pattern": "(?i)^Кутерьма$",
+      "season": 4,
+      "episode": 5,
+      "displayTitle": "Индейка в горшке"
+    },
+    {
+      "folder": "Закусочная Боба",
+      "pattern": "(?i)^Неестественный$",
+      "season": 3,
+      "episode": 15,
+      "displayTitle": "У.Т.: Уличный Туалет"
+    }
+  ],
+  "torrentScanRoots": [],
+  "qbittorrent": {
+    "webUiUrl": "",
+    "skipCertificateCheck": false,
+    "pathMap": []
+  },
+  "shows": [
+    { "folder": "Арчер", "tvId": 10283 },
+    { "folder": "Закусочная Боба", "tvId": 32726 },
+    { "folder": "Робоцып", "tvId": 709 },
+    { "folder": "Царь горы", "tvId": 2122 },
+    { "folder": "Супертюрьма", "tvId": 3108 }
+  ]
+}

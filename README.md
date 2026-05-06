@@ -51,6 +51,24 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Publish-
 
 **MediaInboxToolkit** раскладывает файлы по структуре; **SeriesToolkit** (стабильная линия **0.2.2**) полирует имена эпизодов уже в целевых папках. Общий модуль метаданных — `Fetch-VideoMetadata.ps1`.
 
+## Плоские эпизоды в папке мультсериала
+
+Если в каталоге шоу лежат **отдельные файлы без `SxxEyy`** (только название выпуска), их можно разнести по подпапкам **`Сезон N`** и переименовать по данным TMDB:
+
+- Скрипт: **`Scripts/Resolve-LooseCartoonEpisodesFromTmdb.ps1`**
+- Конфиг UTF-8: **`Scripts/Resolve-LooseCartoonEpisodesFromTmdb.config.json`** (`cartoonsRoot`, список шоу с **`tvId`**, опционально **`torrentScanRoots`** и блок **`qbittorrent`**)
+- Ключ TMDB: **`TMDB_API_KEY`** (или см. `Fetch-VideoMetadata.ps1`)
+
+**Проверяйте `tvId` на [themoviedb.org](https://www.themoviedb.org/).** Пример: *Robot Chicken* — **709**; число **1433** там — *American Dad!*, для «Робоцыпа» оно не подходит.
+
+Пример из корня монорепозитория:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Scripts\Resolve-LooseCartoonEpisodesFromTmdb.ps1 -WhatIf
+```
+
+Уберите **`-WhatIf`**, когда результат устраивает.
+
 ## Политика (расширения)
 
 - **`destinations`** — любые именованные корни (не только `series` / `cartoons` / `movies` / `review`): например `animeSeries`, `animeMovies`; пути относительно `nasShareRoot`.

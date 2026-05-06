@@ -53,7 +53,7 @@
       "maxBasenameChars": 72,
       "maxSeasonsToScanPerShow": 28,
       "pathContainsToTmdbTvId": [
-        { "ifPathContains": "Robot Chicken", "tmdbTvId": 1433 }
+        { "ifPathContains": "Robot Chicken", "tmdbTvId": 709 }
       ]
     }
   },
