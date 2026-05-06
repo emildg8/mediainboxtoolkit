@@ -4,7 +4,7 @@
     "description": "ПРИМЕР одной библиотеки (не универсальный): скопируйте в sort-inbox.json и подправьте nasShareRoot / inboxRelative. Другой пользователь задаёт свои пути или оставляет только нужные ключи в destinations.",
     "updatedAt": "2026-05-04"
   },
-  "nasShareRoot": "\\\\Emilian_TNAS\\emildg8",
+  "nasShareRoot": "\\\\NAS\\media",
   "inboxRelative": "Video\\Sort",
   "destinations": {
     "series": "Video\\Сериалы",

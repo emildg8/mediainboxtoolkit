@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "meta": {
-    "description": "Нейтральный шаблон: замените nasShareRoot и относительные пути. Расширенный пример: sort-inbox.library-layout-advanced.example.json. Локальный диск: sort-inbox.local-disk.example.json. Скелет внутри Sort: sort-inbox.video-under-sort*.example.json. Опционально в folders: skeletonProfile (ascii|cyrillic, метка), skeletonExtraRelatives [] — относительно nasShareRoot для New-MediaInboxDestinationSkeleton.ps1; workspaceSeriesToolkitSubfolders [] — подпапки под Sort\\Video для Organize-SortVideoUnderSort.ps1.",
-    "updatedAt": "2026-05-05"
+    "description": "Обезличенный пример для локального диска без UNC. Подходит для одиночного ПК: Inbox=D:\\Media\\Video\\Sort, назначения в D:\\Media\\Video\\*.",
+    "updatedAt": "2026-05-06"
   },
-  "nasShareRoot": "\\\\FILESERVER\\media",
+  "nasShareRoot": "D:\\Media",
   "inboxRelative": "Video\\Sort",
   "destinations": {
     "series": "Video\\Сериалы",
@@ -34,9 +34,7 @@
     "enabled": true
   },
   "folders": {
-    "createDestinationRootsOnApply": true,
-    "skeletonProfile": "neutral",
-    "skeletonExtraRelatives": []
+    "createDestinationRootsOnApply": true
   },
   "classification": {
     "folderSeasonContext": {
@@ -46,16 +44,7 @@
     "tvSpecialFilenameBoost": { "enabled": true },
     "movies": { "allowMissingYearIfTmdbMatched": true },
     "webTmdbResolve": { "enabled": true },
-    "featureMeter": { "minSecondsForFullFeature": 3600 },
-    "shortFormEpisodeTitleGuess": {
-      "enabled": true,
-      "maxDurationSec": 1500,
-      "maxBasenameChars": 72,
-      "maxSeasonsToScanPerShow": 28,
-      "pathContainsToTmdbTvId": [
-        { "ifPathContains": "Robot Chicken", "tmdbTvId": 709 }
-      ]
-    }
+    "featureMeter": { "minSecondsForFullFeature": 3600 }
   },
   "scope": {
     "videoOnly": true

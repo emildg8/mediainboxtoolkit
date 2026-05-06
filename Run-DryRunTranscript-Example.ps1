@@ -4,12 +4,21 @@
   Пример: DryRun + Start-Transcript + краткий POST-RUN SUMMARY по последнему CSV в LOGS/.
 #>
 param(
-    [string]$InboxPath = '\\Emilian_TNAS\emildg8\Video\Sort',
+    [string]$InboxPath = '',
     [string]$PolicyPath = ''
 )
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($InboxPath)) {
+    $InboxPath = [Environment]::GetEnvironmentVariable('MIT_INBOX_ROOT', 'Process')
+}
+if ([string]::IsNullOrWhiteSpace($InboxPath)) {
+    $InboxPath = [Environment]::GetEnvironmentVariable('MIT_INBOX_ROOT', 'User')
+}
+if ([string]::IsNullOrWhiteSpace($InboxPath)) {
+    $InboxPath = '\\NAS\media\Video\Sort'
+}
 if ([string]::IsNullOrWhiteSpace($PolicyPath)) {
-    $PolicyPath = Join-Path $PSScriptRoot 'sort-inbox.library-layout-emilian.example.json'
+    $PolicyPath = Join-Path $PSScriptRoot 'sort-inbox.library-layout-advanced.example.json'
 }
 $logDir = Join-Path $PSScriptRoot 'LOGS'
 if (-not (Test-Path -LiteralPath $logDir)) {

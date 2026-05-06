@@ -1,7 +1,7 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-  Публикует содержимое MediaInboxToolkit/ + Fetch в репозиторий https://github.com/emildg8/MediaInboxToolkit (ветка main).
+  Публикует содержимое MediaInboxToolkit/ + Fetch в standalone-репозиторий remote `media-inbox` (ветка main).
 .DESCRIPTION
   Запускать из корня монорепо Script_Rename_ALLVideo. Требуется git, remote `media-inbox` на этот URL.
 #>

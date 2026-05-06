@@ -4,7 +4,7 @@
     "description": "Разложение inbox (Video\\Sort) во вложенный каталог Video\\Sort\\_Workspace\\… без выхода на основную библиотеку NAS. Скопируйте и подправьте nasShareRoot при необходимости.",
     "updatedAt": "2026-05-04"
   },
-  "nasShareRoot": "\\\\Emilian_TNAS\\emildg8",
+  "nasShareRoot": "\\\\NAS\\media",
   "inboxRelative": "Video\\Sort",
   "destinations": {
     "series": "Video\\Sort\\_Workspace\\series",

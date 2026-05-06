@@ -60,7 +60,7 @@
 - `SeriesMetaExtrasToolkit.Engine.ps1` — заготовка: NFO (Kodi/Jellyfin), `poster.jpg` / `fanart.jpg` из TMDB `images`, опционально `tvshow.nfo` / `movie.nfo`.
 - `version.json`, `CHANGELOG.md`, `Bump-Version.ps1`, `Sync-GitHub.ps1`, `Publish-SeriesMetaExtrasStandalone.ps1` — зеркало паттерна публикации (subtree → отдельный GitHub repo, remote по аналогии с `media-inbox`).
 
-Публикация: после создания репозитория `emildg8/SeriesMetaExtrasToolkit` добавить remote `series-meta-extras` и вызывать `Publish-SeriesMetaExtrasStandalone.ps1` из корня монорепо.
+Публикация: после создания репозитория `SeriesMetaExtrasToolkit` у вашего GitHub-пользователя добавить remote `series-meta-extras` и вызывать `Publish-SeriesMetaExtrasStandalone.ps1` из корня монорепо.
 
 **Вопросы к вам (D):**  
 7) Целевая схема: **Kodi** NFO, **Jellyfin** meta, или оба?  

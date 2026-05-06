@@ -1,4 +1,9 @@
-# CHANGELOG
+﻿# CHANGELOG
+
+## 0.2.26 - 2026-05-06 12:55:00 +03:00
+- **Обезличивание для публичного использования:** удалён закоммиченный `media-library-layout.local.json`; добавлен безопасный шаблон `media-library-layout.local.example.json`. В примерах и дефолтах убраны персональные UNC-пути, используется нейтральный префикс `\\NAS\media`.
+- **Универсальный запуск на разных источниках:** в `Invoke-MediaInboxSortStage1.ps1`, `Invoke-MediaInboxSortStage3Apply.ps1`, `Organize-SortInPlace.ps1`, `Organize-SortVideoUnderSort.ps1`, `Run-DryRunTranscript-Example.ps1` добавлена поддержка `MIT_INBOX_ROOT` (Process/User) как дефолтного корня инбокса; fallback — `\\NAS\media\Video\Sort`.
+- **Дополнительные варианты политики:** добавлен `sort-inbox.local-disk.example.json` для локального сценария (`D:\Media\...`), переименован расширенный пример в `sort-inbox.library-layout-advanced.example.json`, README обновлён для быстрого старта (NAS/локальный/внешний диск).
 
 ## 0.2.25 - 2026-05-06 12:45:00 +03:00
 - **Релизная документация GitHub:** ссылки на changelog монорепозитория в **.github/workflows/release.yml** и **.github/scripts/Build-MediaInboxRelease.ps1** переведены на ветку **master**, чтобы в карточке релиза всегда открывалась актуальная история изменений.
@@ -43,7 +48,7 @@
 
 ## 0.2.15 - 2026-05-06 12:00:00 +03:00
 - Корневой **`.gitignore`** — явная строка **`MediaInboxToolkit/media-library-layout.local.json`**, чтобы локальный UNC и правила библиотеки не попадали в коммиты.
-- Зафиксирован проверенный сценарий на реальном dry-run CSV (~4000 строк, `\\Emilian_TNAS\emildg8\Video\Sort`): **`New-MediaInboxReviewCsv.ps1`** → **`Update-MediaInboxReviewCsvAutoDecide.ps1`** с **`-TorrentDirectory`** (`%USERPROFILE%\Downloads`, сотни `.torrent`). При доступном NAS и **`media-library-layout.local.json`**: **`MediaLibraryRoot`** резолвится в `Video`, индекс сериалов (**`SeriesIndexEntries`**) в порядка **300** имён папок; доля **`REVIEW`** после автодоразметки **~128** строк (без торрентов было **~321**).
+- Зафиксирован проверенный сценарий на реальном dry-run CSV (~4000 строк, `\\NAS\media\Video\Sort`): **`New-MediaInboxReviewCsv.ps1`** → **`Update-MediaInboxReviewCsvAutoDecide.ps1`** с **`-TorrentDirectory`** (`%USERPROFILE%\Downloads`, сотни `.torrent`). При доступном NAS и **`media-library-layout.local.json`**: **`MediaLibraryRoot`** резолвится в `Video`, индекс сериалов (**`SeriesIndexEntries`**) в порядка **300** имён папок; доля **`REVIEW`** после автодоразметки **~128** строк (без торрентов было **~321**).
 
 ## 0.2.14 - 2026-05-05 23:30:00 +03:00
 - **`media-library-layout.*.json`** — опциональный ключ **`videoLibraryRoot`**: UNC до каталога `Video` (приоритет: `-MediaLibraryVideoRoot` → `MIT_VIDEO_LIBRARY_ROOT` → `videoLibraryRoot` в JSON → эвристика по пути CSV).
@@ -178,7 +183,7 @@
 - Snapshot: OLD/MediaInboxToolkit_v0.1.3_20260504-034358 (launcher MediaInboxToolkit.ps1).
 
 ## 0.1.3 - 2026-05-04 03:34:42 +03:00
-- TMDB жанры 16+регион; Fetch: Get-TmdbGenreIdsFromMediaObject; createDestinationRootsOnApply; пример sort-inbox.library-layout-emilian; GUI MVP.
+- TMDB жанры 16+регион; Fetch: Get-TmdbGenreIdsFromMediaObject; createDestinationRootsOnApply; пример sort-inbox.library-layout-advanced; GUI MVP.
 - Snapshot: OLD/MediaInboxToolkit_v0.1.2_20260504-033442 (launcher MediaInboxToolkit.ps1).
 
 ## 0.1.2 - 2026-05-04 03:22:37 +03:00

@@ -1,0 +1,23 @@
+{
+  "videoLibraryRoot": "\\\\NAS\\media\\Video",
+  "qbittorrent": {
+    "webUiUrl": "",
+    "csvSourcePrefix": "\\\\NAS\\media\\Video\\Sort",
+    "downloadRootPrefix": ""
+  },
+  "seriesEpisodeDestinationDir": "Мультсериалы",
+  "scanRoots": ["Мультсериалы", "Сериалы", "Анимесериалы"],
+  "animeSeriesScanRoot": "Анимесериалы",
+  "ovaSubfolderName": "OVA",
+  "ovaFilenameRegex": "(?i)\\b(OVA|ONA|ОВА|Спешл|Special)\\b",
+  "fuzzyEnabled": false,
+  "fuzzyUniqueMinScore": 6,
+  "explicitRules": [
+    {
+      "id": "RobotChicken",
+      "fileRegex": "(?i)Robot[.\\s]+Chicken",
+      "folderRegex": "(?i)(Robot\\s*Chicken|Робоцып|RoboChicken)",
+      "libraryRoot": "Мультсериалы"
+    }
+  ]
+}

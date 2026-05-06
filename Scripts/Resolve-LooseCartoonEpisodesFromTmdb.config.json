@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "cartoonsRoot": "\\\\Emilian_TNAS\\emildg8\\Video\\Sort\\Video\\cartoons",
+  "cartoonsRoot": "\\\\NAS\\media\\Video\\Sort\\Video\\cartoons",
   "matchLanguage": "en-US",
   "displayLanguage": "ru-RU",
   "matchLanguageFallbacks": ["ru-RU", "it-IT", "sq-AL"],

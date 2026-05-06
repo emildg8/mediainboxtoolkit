@@ -70,7 +70,8 @@ foreach ($name in @(
         'MediaInboxToolkit.Orchestrate.ps1', 'Publish-MediaInboxStandalone.ps1',
         'Start-MediaInboxToolkitGui.ps1', 'Start-MediaInboxToolkitGui.Engine.ps1',
         'README.md', 'CHANGELOG.md', 'version.json',
-        'Sync-GitHub.ps1', 'sort-inbox.example.json', 'sort-inbox.library-layout-emilian.example.json', 'docs/SORT-INBOX-PLAN.md',
+        'Sync-GitHub.ps1', 'sort-inbox.example.json', 'sort-inbox.library-layout-advanced.example.json', 'sort-inbox.local-disk.example.json',
+        'media-library-layout.local.example.json', 'docs/SORT-INBOX-PLAN.md',
         'docs/CLASSIFICATION-ROADMAP.md', 'docs/OFFLINE-METADATA.md', 'docs/INSPIRATION-SERIESTOOLKIT.md', 'docs/GUI-EXE-ROADMAP.md'
     )) {
     $p = Join-Path $ProjectRoot $name

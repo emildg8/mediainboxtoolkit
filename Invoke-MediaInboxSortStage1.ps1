@@ -9,7 +9,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$SortRoot = '\\Emilian_TNAS\emildg8\Video\Sort',
+    [string]$SortRoot = '',
     [string]$PolicyPath = '',
     [ValidateSet('Ascii', 'Cyrillic')]
     [string]$SkeletonProfile = 'Ascii',
@@ -19,6 +19,16 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+if ([string]::IsNullOrWhiteSpace($SortRoot)) {
+    $SortRoot = [Environment]::GetEnvironmentVariable('MIT_INBOX_ROOT', 'Process')
+}
+if ([string]::IsNullOrWhiteSpace($SortRoot)) {
+    $SortRoot = [Environment]::GetEnvironmentVariable('MIT_INBOX_ROOT', 'User')
+}
+if ([string]::IsNullOrWhiteSpace($SortRoot)) {
+    $SortRoot = '\\NAS\media\Video\Sort'
+}
 
 $mitRoot = $PSScriptRoot
 if ([string]::IsNullOrWhiteSpace($PolicyPath)) {

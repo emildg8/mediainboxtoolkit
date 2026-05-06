@@ -22,7 +22,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$CsvPath,
-    [string]$InboxRoot = '\\Emilian_TNAS\emildg8\Video\Sort',
+    [string]$InboxRoot = '\\NAS\media\Video\Sort',
     [string]$MediaLibraryVideoRoot = '',
     [switch]$WhatIf
 )

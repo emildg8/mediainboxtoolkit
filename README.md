@@ -22,7 +22,23 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit.ps1 -Use
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Start-MediaInboxToolkitGui.ps1
 ```
 
-Политика по умолчанию: `.\sort-inbox.example.json` (нейтральные пути). Пример разнесённой библиотеки с папками «Сериалы / Фильмы / Аниме / …»: `.\sort-inbox.library-layout-emilian.example.json` — скопируйте и замените `nasShareRoot` на свой UNC; лишние ключи в `destinations` можно удалить. При `-Apply` и `folders.createDestinationRootsOnApply: true` целевые корни из политики **создаются**, если их ещё нет.
+Политика по умолчанию: `.\sort-inbox.example.json` (нейтральные пути). Пример разнесённой библиотеки с папками «Сериалы / Фильмы / Аниме / …»: `.\sort-inbox.library-layout-advanced.example.json` — скопируйте и замените `nasShareRoot` на свой UNC; лишние ключи в `destinations` можно удалить. При `-Apply` и `folders.createDestinationRootsOnApply: true` целевые корни из политики **создаются**, если их ещё нет.
+
+## Обезличенный старт (для любого пользователя)
+
+Ни один скрипт не требует персонального UNC. Используйте один из вариантов:
+
+- **Сетевой NAS/SMB:** `\\NAS\media\Video\Sort`
+- **Локальный диск:** `D:\Media\Video\Sort`
+- **Внешний диск:** `E:\Video\Sort`
+
+Для оркестрационных скриптов можно не передавать `-SortRoot`/`-InboxPath`, а задать переменную окружения:
+
+```powershell
+$env:MIT_INBOX_ROOT = 'D:\Media\Video\Sort'
+```
+
+Локальный layout-конфиг для спецвыпусков: скопируйте `media-library-layout.local.example.json` в `media-library-layout.local.json` и заполните своими путями. Этот файл не должен попадать в git.
 
 После проверки CSV в `LOGS\`: добавьте `-Apply`.
 
@@ -37,7 +53,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit.Orchestr
 
 ## Публикация в отдельный репозиторий GitHub
 
-Из **корня монорепо** при настроенном remote `media-inbox` → `https://github.com/emildg8/MediaInboxToolkit.git`:
+Из **корня монорепо** при настроенном remote `media-inbox` (ваш standalone-репозиторий `MediaInboxToolkit`) :
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Publish-MediaInboxStandalone.ps1 -ForceWithLease
@@ -100,7 +116,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Scripts\
 ## Версии и журнал
 
 - `version.json`, `CHANGELOG.md`, `Bump-Version.ps1` — как в SeriesToolkit.
-- Ветка Git: **`media-inbox-toolkit`** (см. корневой README репозитория).
+- Ветка Git: **`master`**.
 
 ## Логи
 
@@ -119,7 +135,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Scripts\
 3. `.\Update-MediaInboxReviewCsvAutoDecide.ps1 -CsvPath <review.csv> -TorrentDirectory "C:\Users\<user>\Downloads"` → `*.auto.csv`  
    Логика торрентов: совпадение `rutracker-…` в **пути** и в **имени `.torrent`**; разбор **метаданных `.torrent`** (имена файлов внутри раздачи) — если имя видеофайла в CSV встречается **ровно в одной** локальной раздаче, применяется эта раздача (в т.ч. номер темы из имени `.torrent`, без id в пути). При **одинаковом** счёте совпадения слов у нескольких раздач: совпадение **имени файла** с листом в `.torrent`, затем **SxxEyy / Exx** в именах файлов раздачи, затем **topic id** в пути; при двух кандидатах и совпадении **mit_dur_s** из CSV с **ffprobe** по файлу — предпочтение раздаче с **одним** видео-листом.  
    Опционально **qBittorrent Web UI** (если **полный путь** `SourceFullPath` в CSV совпадает с путём, который отдаёт клиент в `save_path` + файлы раздачи): тот же базовый URL, что в браузере, **без** завершающего слэша, например `https://хост:порт/qbittorrent`. Если логина нет — учётку не указывайте; при самоподписанном HTTPS: `-QbittorrentSkipCertificateCheck`. Переменные: `MIT_QBIT_WEBUI`, при необходимости `MIT_QBIT_USER` / `MIT_QBIT_PASS`.  
-   Если qBittorrent качает в один UNC (например `\\NAS\qBittorrent\...\downloads`), а в CSV уже пути после переноса в сортировку (`\\NAS\emildg8\Video\Sort\...`), задайте пару префиксов: **`-QbittorrentCsvSourcePrefix`** (корень, как в CSV) и **`-QbittorrentDownloadRootPrefix`** (корень каталога загрузок qBittorrent). Относительный хвост пути тогда подставляется под каталог загрузок для поиска в индексе API. То же через `MIT_QBIT_CSV_PREFIX` и `MIT_QBIT_DOWNLOAD_ROOT`. Либо блок **`qbittorrent`** в **`media-library-layout.local.json`** (`webUiUrl`, `csvSourcePrefix`, `downloadRootPrefix`) — подхватывается, если параметры и env пустые. У других пользователей клиент не обязателен — достаточно папки с `.torrent`.
+   Если qBittorrent качает в один UNC (например `\\NAS\qBittorrent\...\downloads`), а в CSV уже пути после переноса в сортировку (`\\NAS\media\Video\Sort\...`), задайте пару префиксов: **`-QbittorrentCsvSourcePrefix`** (корень, как в CSV) и **`-QbittorrentDownloadRootPrefix`** (корень каталога загрузок qBittorrent). Относительный хвост пути тогда подставляется под каталог загрузок для поиска в индексе API. То же через `MIT_QBIT_CSV_PREFIX` и `MIT_QBIT_DOWNLOAD_ROOT`. Либо блок **`qbittorrent`** в **`media-library-layout.local.json`** (`webUiUrl`, `csvSourcePrefix`, `downloadRootPrefix`) — подхватывается, если параметры и env пустые. У других пользователей клиент не обязателен — достаточно папки с `.torrent`.
    **Спецвыпуски (без SxxEyy в имени файла):** `media-library-layout.example.json` → **`media-library-layout.local.json`** (в `.gitignore`). Если лежит рядом со скриптом и не заданы **`-MediaLibraryLayoutJson`** / **`MIT_MEDIA_LIBRARY_JSON`**, он подхватывается сам. В JSON: **`videoLibraryRoot`** (UNC до `Video`), **`scanRoots`** (подкаталоги с сериалами: Мультсериалы, Сериалы, Анимесериалы и т.д.). Иначе корень: **`MIT_VIDEO_LIBRARY_ROOT`** или **`-MediaLibraryVideoRoot`**. При запуске строится индекс подпапок; для строк `REVIEW` без эпизода срабатывают **`explicitRules`** (regex имени файла + имени папки + `libraryRoot`). Для **Анимесериалов** при совпадении с **`ovaFilenameRegex`** путь ведёт в подпапку **`ovaSubfolderName`** (например `OVA`). Опциональный fuzzy по `Notes` (`fuzzyEnabled`, `fuzzyUniqueMinScore`) — только один явный победитель. Отключить весь блок «плоско в корень сериала»: **`-SkipCartoonSeriesRootFlat`**. В консоли смотрите **`MediaLibraryRoot`** и **`SeriesIndexEntries`** (должно быть > 0, если NAS доступен).
 4. **`.\Prepare-MediaInboxReviewForHuman.ps1 -CsvPath <*.auto.csv>`** → **`*.for-human.csv` + `*.for-human.html`**  
    Откройте HTML в браузере: цветные блоки **REVIEW** (жёлтый) / **APPLY** (зелёный) / **SKIP** (серый), таблицы по разделам.
