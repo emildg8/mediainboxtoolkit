@@ -67,6 +67,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Publish-
 
 **MediaInboxToolkit** раскладывает файлы по структуре; **SeriesToolkit** (стабильная линия **0.2.2**) полирует имена эпизодов уже в целевых папках. Общий модуль метаданных — `Fetch-VideoMetadata.ps1`.
 
+## Пакетное RU-переименование в Sort (до MediaInbox)
+
+Для ручной партии или узкого инбокса без полного MIT/ffprobe:
+
+```powershell
+cd <repo>\MediaInboxToolkit\Scripts
+# sort-rename.batch.example.json → sort-rename.local.json (sortRoot, списки фильмов/сериалов)
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Apply-SortRussianRename.ps1 -ConfigPath .\sort-rename.local.json -Apply
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Update-SortEpisodeRuTitles.ps1 -SortRoot '\\NAS\share\Video\Sort' -Apply
+```
+
+Пример политики раскладки в основную библиотеку TNAS: **`sort-inbox.emilian-tnas.example.json`**. Конвейер NAS + qBittorrent: [docs/TERRAMASTER-QBIT-PIPELINE.md](docs/TERRAMASTER-QBIT-PIPELINE.md).
+
 ## Плоские эпизоды в папке мультсериала
 
 Если в каталоге шоу лежат **отдельные файлы без `SxxEyy`** (только название выпуска), их можно разнести по подпапкам **`Сезон N`** и переименовать по данным TMDB:
@@ -99,6 +112,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\MediaInboxToolkit\Scripts\
 
 - [docs/FIX-PLAN-SORT-CLASSIFICATION-202605.md](docs/FIX-PLAN-SORT-CLASSIFICATION-202605.md) — план исправлений после in-place (movies/series, кириллица, RC/Archer, веб→TMDB id).
 - [docs/SORT-INBOX-PLAN.md](docs/SORT-INBOX-PLAN.md) — структура NAS, фазы, параметры политики.
+- [docs/TERRAMASTER-QBIT-PIPELINE.md](docs/TERRAMASTER-QBIT-PIPELINE.md) — TerraMaster, qBittorrent, Sort → Фильмы/Сериалы/Аниме.
 - [docs/CLASSIFICATION-ROADMAP.md](docs/CLASSIFICATION-ROADMAP.md) — типы контента 2.x и план сигналов.
 - [docs/OFFLINE-METADATA.md](docs/OFFLINE-METADATA.md) — постер и описание рядом с медиа.
 - [docs/INSPIRATION-SERIESTOOLKIT.md](docs/INSPIRATION-SERIESTOOLKIT.md) — что перенимаем из SeriesToolkit.

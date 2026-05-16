@@ -1,5 +1,15 @@
 ﻿# CHANGELOG
 
+## 0.2.28 - 2026-05-17 01:30:00 +03:00
+- **`Scripts/Apply-SortRussianRename.ps1`** — пакетное RU-переименование в инбоксе Sort по UTF-8 JSON: фильмы, сериалы (SxxEyy + TMDB), коллекции фильмов (KnK), бонусы в подпапку `Бонусы`, слияние второго сезона в существующую папку шоу.
+- **`Scripts/sort-rename.batch.example.json`**, **`sort-inbox.emilian-tnas.example.json`** — шаблоны для «других» NAS и партии Emilian TNAS.
+- **`Scripts/Update-SortEpisodeRuTitles.ps1`**, **`Scripts/Fix-SortNestedSeasonFolders.ps1`** — дозаполнение названий эпизодов и исправление вложенности после SeriesToolkit.
+- **`docs/TERRAMASTER-QBIT-PIPELINE.md`** — целевой конвейер TerraMaster + qBittorrent Web UI → Sort → библиотека.
+
+## 0.2.27 - 2026-05-17 22:00:00 +03:00
+- **`sort-inbox.emilian-tnas.example.json`** — политика для инбокса `\\Emilian_TNAS\emildg8\Video\Sort` с раскладкой в основную библиотеку (`Video\Фильмы`, `Сериалы`, `Анимесериалы`, `Аниме`, `Мультики`), `seriesQueryRewrites` и `seriesFolderByTmdbTvId` для текущей партии (Jack Ryan, Code Geass, DtB, KnK, Ben-To и др.), `orphanSeasonFolderSeriesMap` для папок S01 / R2 / Gemini.
+- План ручной проверки переименования (без apply): `logs/sort-emilian-rename-plan-20260517.md`.
+
 ## 0.2.26 - 2026-05-06 12:55:00 +03:00
 - **Обезличивание для публичного использования:** удалён закоммиченный `media-library-layout.local.json`; добавлен безопасный шаблон `media-library-layout.local.example.json`. В примерах и дефолтах убраны персональные UNC-пути, используется нейтральный префикс `\\NAS\media`.
 - **Универсальный запуск на разных источниках:** в `Invoke-MediaInboxSortStage1.ps1`, `Invoke-MediaInboxSortStage3Apply.ps1`, `Organize-SortInPlace.ps1`, `Organize-SortVideoUnderSort.ps1`, `Run-DryRunTranscript-Example.ps1` добавлена поддержка `MIT_INBOX_ROOT` (Process/User) как дефолтного корня инбокса; fallback — `\\NAS\media\Video\Sort`.

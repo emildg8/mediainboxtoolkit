@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "description": "Инбокс \\\\Emilian_TNAS\\emildg8\\Video\\Sort → основная библиотека Video\\Фильмы|Сериалы|Аниме|Анимесериалы (кириллица). Скопируйте в sort-inbox.local.json и задайте MIT_INBOX_ROOT=\\\\Emilian_TNAS\\emildg8\\Video\\Sort. Для поэтапной проверки: сначала переименование (SeriesToolkit / ручной план), затем -Apply.",
+    "updatedAt": "2026-05-17",
+    "skeletonProfile": "cyrillic"
+  },
+  "nasShareRoot": "\\\\Emilian_TNAS\\emildg8",
+  "inboxRelative": "Video\\Sort",
+  "destinations": {
+    "series": "Video\\Сериалы",
+    "cartoons": "Video\\Мультсериалы",
+    "cartoonMovies": "Video\\Мультики",
+    "movies": "Video\\Фильмы",
+    "anime": "Video\\Аниме",
+    "animeSeries": "Video\\Анимесериалы",
+    "review": "Video\\_НаРазбор"
+  },
+  "destinationsByKind": {
+    "series_episode": "series",
+    "series_related_movie": "movies",
+    "cartoon_series_episode": "cartoons",
+    "cartoon_movie": "cartoonMovies",
+    "cartoon_series_related_movie": "cartoonMovies",
+    "anime_series_episode": "animeSeries",
+    "anime_series_related": "animeSeries",
+    "anime_ova": "animeSeries",
+    "anime_movie": "anime",
+    "movie": "movies",
+    "unknown": "review",
+    "bluray_remux": "movies"
+  },
+  "destinationsByKindMinConfidence": 40,
+  "tmdbKindRefinement": { "enabled": true },
+  "folders": {
+    "createDestinationRootsOnApply": true,
+    "skeletonProfile": "cyrillic",
+    "workspaceSeriesToolkitSubfolders": [ "Сериалы", "Мультсериалы", "Анимесериалы" ],
+    "skeletonExtraRelatives": [
+      "Video\\Документалистика",
+      "Video\\Концерты",
+      "Video\\Спорт",
+      "Video\\Стендап",
+      "Video\\Детское",
+      "Video\\Реалити",
+      "Video\\Клипы",
+      "Video\\_Промежуточное",
+      "Video\\_Дополнения"
+    ]
+  },
+  "classification": {
+    "folderSeasonContext": {
+      "enabled": true,
+      "orphanSeasonFolderSeriesMap": [
+        {
+          "folderMatch": "Tom.Clancy's.Jack.Ryan.S01",
+          "seriesGuess": "Tom Clancy's Jack Ryan"
+        },
+        {
+          "folderMatch": "Code Geass - Lelouch of the Rebellion R2",
+          "seriesGuess": "Code Geass Lelouch of the Rebellion"
+        },
+        {
+          "folderMatch": "Darker than Black - Ryuusei no Gemini",
+          "seriesGuess": "Darker than Black Gemini of the Meteor"
+        }
+      ]
+    },
+    "tvSpecialFilenameBoost": { "enabled": true },
+    "movies": { "allowMissingYearIfTmdbMatched": true },
+    "webTmdbResolve": { "enabled": true },
+    "featureMeter": { "minSecondsForFullFeature": 3600 },
+    "cartoonMovieBasenameRegexes": [
+      "(?i)Alice\\.(?:in\\.)?Wonderland\\.1951"
+    ],
+    "seriesQueryRewrites": [
+      { "pattern": "(?i)Tom\\.Clancy.?s\\.Jack\\.Ryan", "seriesGuess": "Tom Clancy's Jack Ryan", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Kaichou wa Maid-sama", "seriesGuess": "Kaichou wa Maid-sama!", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Darker than Black - Kuro no Keiyakusha", "seriesGuess": "Darker than Black", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Darker than Black - Ryuusei no Gemini", "seriesGuess": "Darker than Black Gemini of the Meteor", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Code Geass - Lelouch of the Rebellion R2", "seriesGuess": "Code Geass Lelouch of the Rebellion", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Code Geass - Lelouch of the Rebellion", "seriesGuess": "Code Geass Lelouch of the Rebellion", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Psycho-pass", "seriesGuess": "Psycho-Pass", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Clannad", "seriesGuess": "Clannad", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Boundary of Emptiness|Garden of Sinners|Kara no Kyoukai", "seriesGuess": "Kara no Kyoukai", "matchField": "relativePath" },
+      { "pattern": "(?i)Zegapain", "seriesGuess": "Zegapain", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Ben-To|Ben-Tou", "seriesGuess": "Ben-To", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Muv-Luv Alternative - Total Eclipse", "seriesGuess": "Muv-Luv Alternative Total Eclipse", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Trinity Blood", "seriesGuess": "Trinity Blood", "matchField": "seriesGuessOrBasename" },
+      { "pattern": "(?i)Edinorogovy", "seriesGuess": "Единороговы", "matchField": "basename" }
+    ],
+    "seriesFolderByTmdbTvId": {
+      "73375": "Джек Райан",
+      "65648": "Президент студсовета — горничная!",
+      "31718": "Темнее черного",
+      "31724": "Код Гиас: Восставший Лелуш",
+      "43865": "Психопаспорт",
+      "24835": "Кланнад",
+      "34735": "Дзэгапэйн",
+      "61970": "Бэнто",
+      "45241": "Muv-Luv: Полное затмение",
+      "23406": "Кровь триединства",
+      "97825": "Граница пустоты"
+    }
+  },
+  "scope": {
+    "videoOnly": true,
+    "excludeDirectoryNames": [ "Video", "_Workspace" ]
+  },
+  "safety": {
+    "requireSourceUnderInbox": true,
+    "skipSourceIfUnderLibrary": true,
+    "libraryRootRelatives": [
+      "Video\\Сериалы",
+      "Video\\Мультсериалы",
+      "Video\\Мультики",
+      "Video\\Фильмы",
+      "Video\\Аниме",
+      "Video\\Анимесериалы"
+    ]
+  },
+  "preferCartoonsSubfolder": false,
+  "displayNames": { "tmdbLanguage": "ru-RU", "preferCyrillic": true },
+  "episodeTitleFallback": "Серия {0}",
+  "blurayRemux": { "enabled": true },
+  "seasonFolderFormat": "Сезон {0}",
+  "videoExtensions": [ "mkv", "mp4", "avi", "m4v", "mov", "wmv", "webm", "mpeg", "mpg" ],
+  "filenameTemplates": {
+    "series": "{Series} - S{Season:D2}E{Episode:D2} - {Title}.{Ext}",
+    "movie": "{Title}.{Ext}"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "description": "Пример пакетного RU-переименования в инбоксе Sort. Скопируйте в sort-rename.local.json и укажите -ConfigPath.",
+    "updatedAt": "2026-05-17"
+  },
+  "sortRoot": "\\\\NAS\\share\\Video\\Sort",
+  "bonusesSubfolder": "Бонусы",
+  "seasonFolderFormat": "Сезон {0}",
+  "episodeFilenameTemplate": "{Series} - S{Season:D2}E{Episode:D2} - {Title}.{Ext}",
+  "movieFilenameTemplate": "{Title}.{Ext}",
+  "displayNames": { "tmdbLanguage": "ru-RU" },
+  "movies": [
+    { "match": "(?i)^Friday\\.the\\.13th\\.2009", "title": "Пятница 13-е" },
+    { "match": "(?i)^Weapons\\.2025", "title": "Орудия" },
+    { "match": "(?i)^Alice\\.in\\.Wonderland\\.1951", "title": "Алиса в стране чудес", "destKind": "cartoonMovie" },
+    { "match": "(?i)^Aquaman\\.and\\.the\\.Lost\\.Kingdom", "title": "Аквамен и потерянное царство" },
+    { "match": "(?i)^Edinorogovy\\.2024", "title": "Единороговы" },
+    { "match": "(?i)^Emmanuelle\\.1974", "title": "Эммануэль" },
+    { "match": "(?i)^End\\.of\\.Watch\\.2012", "title": "Патруль" },
+    { "match": "(?i)^Leprechaun\\.1993", "title": "Лепрекон" },
+    { "match": "(?i)^Predator\\.2\\.1990", "title": "Хищник 2" },
+    { "match": "(?i)^Riddick\\.2013", "title": "Риддик" },
+    { "match": "(?i)^Runaway\\.Train\\.1986", "title": "Поезд-беглец" },
+    { "match": "(?i)^Send\\.Help\\.2026", "title": "На помощь!" },
+    { "match": "(?i)^Soldier\\.1998", "title": "Солдат" },
+    { "match": "(?i)^The\\.Descent\\.2005", "title": "Спуск" },
+    { "match": "(?i)^The\\.Family\\.Man\\.2000", "title": "Семьянин" },
+    { "match": "(?i)^The\\.Golden\\.Child\\.1986", "title": "Золотой ребенок" },
+    { "match": "(?i)^The\\.Limey\\.1999", "title": "Англичанин" },
+    { "match": "(?i)^The\\.Ninth\\.Gate\\.1999", "title": "Девятые врата" },
+    { "match": "(?i)^Unbreakable\\.2000", "title": "Неуязвимый" },
+    { "match": "(?i)^Uncharted\\.2022", "title": "Анчартед: На картах не значится" },
+    { "match": "(?i)^Underwater\\.2020", "title": "Под водой" },
+    { "match": "(?i)^Waterworld", "title": "Водный мир" },
+    { "match": "(?i)^Fight\\.Club\\.1999", "title": "Бойцовский клуб" },
+    { "match": "(?i)^A\\.Knights\\.Tale\\.2001", "title": "История рыцаря" },
+    { "match": "(?i)^Life\\.of\\.Brian\\.1979", "title": "Жизнь Брайана по Монти Пайтон" },
+    { "match": "(?i)^U-571\\.2000", "title": "Ю-571" },
+    { "match": "(?i)^Жар тела", "title": "Жар тела", "skipIfExists": true }
+  ],
+  "series": [
+    { "folderMatch": "(?i)Jack\\.Ryan\\.S01", "tvId": 73375, "season": 1, "folderTitle": "Джек Райан", "episodePattern": "(?i)s(?<s>\\d{1,2})e(?<e>\\d{1,2})" },
+    { "folderMatch": "(?i)Kaichou wa Maid-sama", "tvId": 65648, "season": 1, "folderTitle": "Президент студсовета — горничная!", "episodePattern": "(?i)Ep\\s*(?<e>\\d{1,2})" },
+    { "folderMatch": "(?i)Darker than Black - Kuro no Keiyakusha", "tvId": 31718, "season": 1, "folderTitle": "Темнее черного", "episodePattern": "(?i)Ep\\s*(?<e>\\d{1,2})" },
+    { "folderMatch": "(?i)Darker than Black - Ryuusei no Gemini", "tvId": 31718, "season": 2, "folderTitle": "Темнее черного", "episodePattern": "(?i)Ep\\s*(?<e>\\d{1,2})" },
+    { "folderMatch": "(?i)Code Geass - Lelouch of the Rebellion R2", "tvId": 31724, "season": 2, "folderTitle": "Код Гиас: Восставший Лелуш", "episodePattern": "(?i)Ep\\s*(?<e>\\d{1,2})" },
+    { "folderMatch": "(?i)Code Geass - Lelouch of the Rebellion", "tvId": 31724, "season": 1, "folderTitle": "Код Гиас: Восставший Лелуш", "episodePattern": "(?i)Ep\\s*(?<e>\\d{1,2})" },
+    { "folderMatch": "(?i)Psycho-pass", "tvId": 43865, "season": 1, "folderTitle": "Психопаспорт", "episodePattern": "(?i)Ep\\s*(?<e>\\d{1,2})" },
+    { "folderMatch": "(?i)Clannad", "tvId": 24835, "season": 1, "folderTitle": "Кланнад", "episodePattern": "(?i)Ep\\s*(?<e>\\d{1,2})" },
+    { "folderMatch": "(?i)Zegapain", "tvId": 34735, "season": 1, "folderTitle": "Дзэгапэйн", "episodePattern": "(?i)Ep\\s*(?<e>\\d{1,2})" },
+    { "folderMatch": "(?i)Ben-To", "tvId": 61970, "season": 1, "folderTitle": "Бэнто", "episodePattern": "(?i)Ep\\s*(?<e>\\d{1,2})" },
+    { "folderMatch": "(?i)Muv-Luv Alternative - Total Eclipse", "tvId": 45241, "season": 1, "folderTitle": "Muv-Luv: Полное затмение", "episodePattern": "(?i)Ep\\s*(?<e>\\d{1,2})" },
+    { "folderMatch": "(?i)Trinity Blood", "tvId": 23406, "season": 1, "folderTitle": "Кровь триединства", "episodePattern": "(?i)Ep\\s*(?<e>\\d{1,2})" }
+  ],
+  "movieCollections": [
+    {
+      "folderMatch": "(?i)Garden of Sinners|Kara no Kyoukai|Boundary of Emptiness",
+      "folderTitle": "Граница пустоты",
+      "bonusesPattern": "(?i)(^Boundary of Emptiness - CI |Remix|OVA)",
+      "files": [
+        { "match": "(?i)M 01 - Overlooking View", "tmdbMovieId": 23150 },
+        { "match": "(?i)M 02 - A Study in Murder \\(Part 1\\)", "tmdbMovieId": 23151 },
+        { "match": "(?i)M 03 - Remaining Sense of Pain", "tmdbMovieId": 23153 },
+        { "match": "(?i)M 04 - The Hollow Shrine", "tmdbMovieId": 23154 },
+        { "match": "(?i)M 05 - Paradox Spiral", "tmdbMovieId": 23155 },
+        { "match": "(?i)M 06 - Oblivion Recorder", "tmdbMovieId": 23166 },
+        { "match": "(?i)M 07 - A Study in Murder \\(Part 2\\)", "tmdbMovieId": 23167 },
+        { "match": "(?i)OVA - Final Chapter", "tmdbMovieId": 47747, "bonus": true }
+      ]
+    }
+  ],
+  "bonusesFilenamePattern": "(?i)(\\s-\\s(ED|OP|PD)\\s|\\s-\\s(PV|CM|SP|NC|Menu|Gaiden)\\b|\\s-\\sOP\\s|\\s-\\sED\\b|\\s-\\sPD\\s|Trailers?\\b| - Sp \\d)"
+}
