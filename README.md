@@ -78,6 +78,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Apply-SortRussianRename.ps
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Update-SortEpisodeRuTitles.ps1 -SortRoot '\\NAS\share\Video\Sort' -Apply
 ```
 
+После ошибочного SeriesToolkit или дублей сезонов:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Repair-SortInboxLayout.ps1 -Apply
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Sync-SortEpisodeTitlesFromTmdb.ps1 -Apply
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Export-SortInboxAudit.ps1
+```
+
 Пример политики раскладки в основную библиотеку TNAS: **`sort-inbox.emilian-tnas.example.json`**. Конвейер NAS + qBittorrent: [docs/TERRAMASTER-QBIT-PIPELINE.md](docs/TERRAMASTER-QBIT-PIPELINE.md).
 
 ## Плоские эпизоды в папке мультсериала

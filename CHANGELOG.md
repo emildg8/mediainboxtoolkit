@@ -1,5 +1,10 @@
 ﻿# CHANGELOG
 
+## 0.2.29 - 2026-05-17 01:40:00 +03:00
+- **`Scripts/Repair-SortInboxLayout.ps1`** — восстановление Sort: снятие вложенности `Сезон N\Сезон N\`, дедуп SxxEyy по TMDB, заглушки, бонусы из корня шоу.
+- **`Scripts/Sync-SortEpisodeTitlesFromTmdb.ps1`** — принудительная синхронизация названий эпизодов с TMDB (исправление чужих имён после ошибочного SeriesToolkit).
+- **`Scripts/Export-SortInboxAudit.ps1`** — отчёт nested/Серия N/Эпизод N/badPrefix.
+
 ## 0.2.28 - 2026-05-17 01:30:00 +03:00
 - **`Scripts/Apply-SortRussianRename.ps1`** — пакетное RU-переименование в инбоксе Sort по UTF-8 JSON: фильмы, сериалы (SxxEyy + TMDB), коллекции фильмов (KnK), бонусы в подпапку `Бонусы`, слияние второго сезона в существующую папку шоу.
 - **`Scripts/sort-rename.batch.example.json`**, **`sort-inbox.emilian-tnas.example.json`** — шаблоны для «других» NAS и партии Emilian TNAS.

@@ -47,8 +47,12 @@ $env:MIT_QBIT_PASS = '...'
 cd <repo>\MediaInboxToolkit\Scripts
 # Скопируйте sort-rename.batch.example.json → sort-rename.local.json и задайте sortRoot
 powershell -File .\Apply-SortRussianRename.ps1 -ConfigPath .\sort-rename.local.json -Apply
-powershell -File .\Update-SortEpisodeRuTitles.ps1 -SortRoot $env:MIT_INBOX_ROOT -Apply
+powershell -File .\Repair-SortInboxLayout.ps1 -ConfigPath .\sort-rename.local.json -Apply
+powershell -File .\Sync-SortEpisodeTitlesFromTmdb.ps1 -ConfigPath .\sort-rename.local.json -Apply
+powershell -File .\Export-SortInboxAudit.ps1 -SortRoot $env:MIT_INBOX_ROOT
 ```
+
+**Не запускайте SeriesToolkit** по папкам, где уже есть `Сезон N\` с SxxEyy — он создаёт лишний уровень `Сезон N\Сезон N\` и путает имена. Используйте `Sync-SortEpisodeTitlesFromTmdb.ps1`.
 
 Конфиг-пример под TNAS: `sort-inbox.emilian-tnas.example.json` (раскладка в `Video\…`).
 
